@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -23,7 +24,7 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: { autoRefreshToken: false, persistSession: false },
-      }
+      },
     );
 
     const body = await req.json();
@@ -44,11 +45,13 @@ serve(async (req: Request) => {
       .single();
 
     if (partidaError || !partida) {
-      throw new Error(`Error obteniendo partida: ${partidaError?.message || 'No encontrada'}`);
+      throw new Error(
+        `Error obteniendo partida: ${partidaError?.message || 'No encontrada'}`,
+      );
     }
 
     if (partida.estado !== 'esperando') {
-        throw new Error('La partida ya ha iniciado o ha finalizado');
+      throw new Error('La partida ya ha iniciado o ha finalizado');
     }
 
     // 2. GET JUGADORES
@@ -63,7 +66,9 @@ serve(async (req: Request) => {
     }
 
     if (!jugadores || jugadores.length !== 4) {
-      throw new Error('Debe haber exactamente 4 jugadores en la sala para iniciar');
+      throw new Error(
+        'Debe haber exactamente 4 jugadores en la sala para iniciar',
+      );
     }
 
     // 3. UPDATE PARTIDA
@@ -77,7 +82,9 @@ serve(async (req: Request) => {
       .eq('id', partida_id);
 
     if (updatePartidaError) {
-      throw new Error(`Error actualizando partida: ${updatePartidaError.message}`);
+      throw new Error(
+        `Error actualizando partida: ${updatePartidaError.message}`,
+      );
     }
 
     // 4. CREATE MANO
@@ -105,7 +112,9 @@ serve(async (req: Request) => {
     }
 
     if (todasFichas.length !== 55) {
-      throw new Error(`Error: se esperaban 55 fichas, se generaron ${todasFichas.length}`);
+      throw new Error(
+        `Error: se esperaban 55 fichas, se generaron ${todasFichas.length}`,
+      );
     }
 
     // 6. SHUFFLE
@@ -174,16 +183,44 @@ serve(async (req: Request) => {
       })
       .eq('id', mano.id);
 
-    return new Response(JSON.stringify({ partidaId: partida_id, manoId: mano.id }), {
-      status: 200,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    });
+    // If bot has the first turn, trigger the bot processor in background
+    if (jugadores[turnoInicial].user_id.startsWith('bot-')) {
+      const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/realizar-jugada`;
+      const auth =
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+        Deno.env.get('SUPABASE_ANON_KEY') ||
+        '';
+
+      // Lanzar asíncronamente sin hacer await para no bloquear la respuesta HTTP
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth}`,
+        },
+        body: JSON.stringify({
+          isServerTrigger: true,
+          partidaId: partida_id,
+        }),
+      }).catch((e) => console.error('Error triggering bots after init:', e));
+    }
+
+    return new Response(
+      JSON.stringify({ partidaId: partida_id, manoId: mano.id }),
+      {
+        status: 200,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      },
+    );
   } catch (error: any) {
     console.error('Error in iniciar-partida:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Error interno' }), {
-      status: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: error.message || 'Error interno' }),
+      {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      },
+    );
   }
 });
 

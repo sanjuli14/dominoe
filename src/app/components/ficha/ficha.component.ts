@@ -108,6 +108,8 @@ export class FichaComponent {
   }
 
   onClick() {
+    if (this.disabled) return;
+
     const now = Date.now();
     const isDoubleClick = now - this.lastClickTime < 300;
     this.lastClickTime = now;

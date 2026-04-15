@@ -145,7 +145,7 @@ async function iniciarJuego(
     .insert({
       partida_id: partidaId,
       estado: 'repartiendo',
-      turno_actual: Math.floor(Math.random() * 4), // Salida aleatoria (no siempre el host)
+      turno_actual: 0,
       sentido: 'horario',
     })
     .select()
@@ -203,15 +203,80 @@ async function iniciarJuego(
     `Fichas insertadas correctamente: ${fichasInsertadas?.length || 0}`,
   );
 
-  // 6. Update mano to 'en_curso'
+  // 6. Determinar turno inicial (Doble más alto)
+  let highestDouble = -1;
+  let turnoInicial = 0;
+
+  for (const j of todosJugadores) {
+    const fichas_jugador = inserts.filter(
+      (ins: any) => ins.jugador_id === j.id,
+    );
+    for (const f of fichas_jugador) {
+      if (f.valor_a === f.valor_b && f.valor_a > highestDouble) {
+        highestDouble = f.valor_a;
+        turnoInicial = j.posicion;
+      }
+    }
+  }
+
+  // Fallback si no hay dobles: mayor suma
+  if (highestDouble === -1) {
+    let maxSuma = -1;
+    for (const j of todosJugadores) {
+      const fichas_jugador = inserts.filter(
+        (ins: any) => ins.jugador_id === j.id,
+      );
+      for (const f of fichas_jugador) {
+        const suma = f.valor_a + f.valor_b;
+        if (suma > maxSuma) {
+          maxSuma = suma;
+          turnoInicial = j.posicion;
+        }
+      }
+    }
+  }
+
+  // 7. Update mano to 'en_curso' and assign turn
   const { error: updateErr } = await supabaseAdmin
     .from('manos')
-    .update({ estado: 'en_curso' })
+    .update({
+      estado: 'en_curso',
+      turno_actual: turnoInicial,
+    })
     .eq('id', mano.id);
 
   if (updateErr) {
     console.error('Error actualizando estado de mano:', updateErr);
     throw new Error('Error iniciando mano');
+  }
+
+  // Si el turno es de un bot, desencadenar su jugada
+  const jugadorActual = todosJugadores.find(
+    (j: any) => j.posicion === turnoInicial,
+  );
+  if (jugadorActual && jugadorActual.user_id.startsWith('bot-')) {
+    console.log(
+      '[crear-sala] Turno inicial asignado a un bot. Disparando trigger...',
+    );
+    const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/realizar-jugada`;
+    const auth =
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+      Deno.env.get('SUPABASE_ANON_KEY') ||
+      '';
+
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${auth}`,
+      },
+      body: JSON.stringify({
+        isServerTrigger: true,
+        partidaId: partidaId,
+      }),
+    }).catch((e) =>
+      console.error('Error triggering bots after crear-sala:', e),
+    );
   }
 
   console.log('Juego iniciado correctamente con mano:', mano.id);

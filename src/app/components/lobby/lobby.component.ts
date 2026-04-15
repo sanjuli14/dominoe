@@ -71,7 +71,9 @@ import { ToastService } from '../../services/toast.service';
 
           <!-- Nombre del Jugador -->
           <div class="mb-6">
-            <label class="block text-sm text-gray-400 mb-2 font-semibold">TÚ NOMBRE</label>
+            <label class="block text-sm text-gray-400 mb-2 font-semibold"
+              >TÚ NOMBRE</label
+            >
             <input
               type="text"
               [(ngModel)]="nombreJugador"
@@ -150,7 +152,11 @@ import { ToastService } from '../../services/toast.service';
     </div>
 
     <!-- Modal para unirse -->
-    <div *ngIf="mostraModal()" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm" (click)="cerrarModal()">
+    <div
+      *ngIf="mostraModal()"
+      class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm"
+      (click)="cerrarModal()"
+    >
       <div
         class="glass-panel max-w-md w-full mx-4 p-8 rounded-2xl border border-purple-500/50 shadow-2xl relative"
         (click)="$event.stopPropagation()"
@@ -186,18 +192,31 @@ import { ToastService } from '../../services/toast.service';
     </div>
 
     <!-- Modal PANTALLA DE ESPERA (LOBBY) -->
-    <div *ngIf="mostraSalaEspera()" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm">
-      <div class="glass-panel p-12 rounded-3xl border border-cyan-400/30 max-w-lg shadow-2xl text-center relative w-full mx-4">
+    <div
+      *ngIf="mostraSalaEspera()"
+      class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm"
+    >
+      <div
+        class="glass-panel p-12 rounded-3xl border border-cyan-400/30 max-w-lg shadow-2xl text-center relative w-full mx-4"
+      >
         <h1 class="gaming-title text-4xl text-cyan-400 mb-6">SALA DE ESPERA</h1>
         <p class="text-white text-lg mb-8">
           Esperando a que se unan los jugadores
         </p>
 
         <!-- Código de sala -->
-        <div class="p-4 bg-cyan-900/20 rounded-xl border border-cyan-500/50 mb-6 relative">
-          <p class="text-gray-400 text-sm mb-2 uppercase font-bold tracking-widest">Código de Invitar:</p>
+        <div
+          class="p-4 bg-cyan-900/20 rounded-xl border border-cyan-500/50 mb-6 relative"
+        >
+          <p
+            class="text-gray-400 text-sm mb-2 uppercase font-bold tracking-widest"
+          >
+            Código de Invitar:
+          </p>
           <div class="flex items-center justify-center gap-4">
-            <span class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest">
+            <span
+              class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest"
+            >
               {{ codigoSalaEspera() }}
             </span>
             <button
@@ -211,8 +230,12 @@ import { ToastService } from '../../services/toast.service';
         </div>
 
         <!-- Jugadores conectados -->
-        <div class="bg-gray-800/50 p-6 rounded-xl border border-gray-600/50 mb-6">
-          <p class="text-cyan-400 font-bold uppercase tracking-widest text-sm mb-4">
+        <div
+          class="bg-gray-800/50 p-6 rounded-xl border border-gray-600/50 mb-6"
+        >
+          <p
+            class="text-cyan-400 font-bold uppercase tracking-widest text-sm mb-4"
+          >
             JUGADORES CONECTADOS: {{ jugadores().length }}/4
           </p>
           <div class="space-y-2">
@@ -244,12 +267,18 @@ import { ToastService } from '../../services/toast.service';
           >
             {{ iniciandoPartida() ? 'Iniciando...' : '¡Empezar Partida!' }}
           </button>
-          <p *ngIf="!puedeIniciar()" class="text-cyan-400 font-bold uppercase text-sm mt-4 animate-pulse">
+          <p
+            *ngIf="!puedeIniciar()"
+            class="text-cyan-400 font-bold uppercase text-sm mt-4 animate-pulse"
+          >
             El Anfitrión debe iniciar la partida
           </p>
         </div>
 
-        <button (click)="salirSala()" class="mt-6 text-gray-400 hover:text-red-400 text-sm font-bold uppercase transition-colors underline">
+        <button
+          (click)="salirSala()"
+          class="mt-6 text-gray-400 hover:text-red-400 text-sm font-bold uppercase transition-colors underline"
+        >
           Salir de la sala
         </button>
       </div>
@@ -284,7 +313,9 @@ export class LobbyComponent {
   // Computados al GameService
   jugadores = computed(() => this.gameService.jugadores());
   puedeIniciar = computed(() => this.gameService.miJugador()?.posicion === 0);
-  codigoSalaEspera = computed(() => this.gameService.partida()?.codigo_sala || '');
+  codigoSalaEspera = computed(
+    () => this.gameService.partida()?.codigo_sala || '',
+  );
 
   // Cargar nombre guardado
   constructor(
@@ -296,15 +327,18 @@ export class LobbyComponent {
     this.nombreJugador = this.util.obtenerConfig().nombreJugador || 'Streamer';
 
     // Auto-Redirección cuando el Host inicie el juego
-    effect(() => {
-      const p = this.gameService.partida();
-      // Si la sala de espera está abierta y el estado pasa a 'en_curso', es que ya inició!
-      if (p && p.estado === 'en_curso' && this.mostraSalaEspera()) {
-        this.mostraSalaEspera.set(false);
-        this.toast.showToast('🔥 ¡La partida ha comenzado!', 'success', 2000);
-        this.router.navigate([`/partida/${p.id}`]);
-      }
-    });
+    effect(
+      () => {
+        const p = this.gameService.partida();
+        // Si la sala de espera está abierta y el estado pasa a 'en_curso', es que ya inició!
+        if (p && p.estado === 'en_curso' && this.mostraSalaEspera()) {
+          this.mostraSalaEspera.set(false);
+          this.toast.showToast('🔥 ¡La partida ha comenzado!', 'success', 2000);
+          this.router.navigate([`/partida/${p.id}`]);
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   // Navegar a modo demo
@@ -317,7 +351,7 @@ export class LobbyComponent {
     console.log('[crearSala] Botón clickeado');
     console.log('[crearSala] GameService:', this.gameService);
     console.log('[crearSala] Nombre jugador:', this.nombreJugador);
-    
+
     // Validar nombre
     if (!this.util.esNombreValido(this.nombreJugador)) {
       console.log('[crearSala] Nombre inválido');
@@ -345,7 +379,7 @@ export class LobbyComponent {
 
       if (partidaId) {
         this.toast.showToast('🎉 ¡Sala creada!', 'success', 2000);
-        
+
         // Iniciar la escucha en vivo del GameService en vez de Navegar al Tablero
         await this.gameService.setCurrentGame(partidaId);
         this.partidaId.set(partidaId);

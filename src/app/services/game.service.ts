@@ -1,4 +1,11 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import {
+  Injectable,
+  signal,
+  computed,
+  effect,
+  NgZone,
+  inject,
+} from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Observable, BehaviorSubject, Subject } from 'rxjs';
 import { supabaseConfig } from '../config/supabase.config';
@@ -58,6 +65,7 @@ export class GameService {
   private partida_id = signal<string | null>(null);
   private user_id = signal<string | null>(null);
   private authReady = signal<boolean>(false);
+  private ngZone = inject(NgZone);
 
   // Estado del Juego
   partida = signal<Partida | null>(null);
@@ -199,20 +207,24 @@ export class GameService {
 
   async setCurrentGame(gameId: string) {
     this.partida_id.set(gameId);
-    const { data } = await this.supabase.auth.getUser();
-    this.user_id.set(data.user?.id || null);
 
-    // Cargar estado inicial
+    const { data } = await this.supabase.auth.getSession();
+    if (data.session?.user?.id) {
+      this.user_id.set(data.session.user.id);
+    }
+
+    // Cargar dependencias básicas primero
     await Promise.all([
       this.loadPartida(),
       this.loadJugadores(),
       this.loadManoActual(),
-      this.loadFichasEnMesa(),
-      this.loadMisFichas(),
     ]);
 
+    // Luego cargar dependencias de datos en base al estado anterior
+    await Promise.all([this.loadFichasEnMesa(), this.loadMisFichas()]);
+
     // Suscribirse a cambios en tiempo real
-    this.subscribeToChanges();
+    await this.subscribeToChanges();
   }
 
   private async loadPartida() {
@@ -229,7 +241,9 @@ export class GameService {
       this.errorMessage$.next(`Error cargando partida: ${error.message}`);
       return;
     }
-    this.partida.set(data);
+    this.ngZone.run(() => {
+      this.partida.set(data);
+    });
   }
 
   private async loadJugadores() {
@@ -239,13 +253,16 @@ export class GameService {
     const { data, error } = await this.supabase
       .from('jugadores')
       .select('*')
-      .eq('partida_id', id);
+      .eq('partida_id', id)
+      .order('posicion', { ascending: true });
 
     if (error) {
       this.errorMessage$.next(`Error cargando jugadores: ${error.message}`);
       return;
     }
-    this.jugadores.set(data || []);
+    this.ngZone.run(() => {
+      this.jugadores.set(data || []);
+    });
   }
 
   private async loadManoActual() {
@@ -265,7 +282,9 @@ export class GameService {
       this.errorMessage$.next(`Error cargando mano: ${error.message}`);
       return;
     }
-    this.manoActual.set(data || null);
+    this.ngZone.run(() => {
+      this.manoActual.set(data || null);
+    });
   }
 
   private async loadFichasEnMesa() {
@@ -284,12 +303,14 @@ export class GameService {
       );
       return;
     }
-    this.fichasEnMesa.set(
-      (data || []).map((f) => ({
-        ...f,
-        posicion: this.calculateFichaPosition(f.orden_jugada),
-      })),
-    );
+    this.ngZone.run(() => {
+      this.fichasEnMesa.set(
+        (data || []).map((f) => ({
+          ...f,
+          posicion: this.calculateFichaPosition(f.orden_jugada),
+        })),
+      );
+    });
   }
 
   private async loadMisFichas() {
@@ -307,93 +328,194 @@ export class GameService {
       this.errorMessage$.next(`Error cargando mis fichas: ${error.message}`);
       return;
     }
-    this.fichasEnMano.set(data || []);
+    this.ngZone.run(() => {
+      this.fichasEnMano.set(data || []);
+    });
   }
 
-  private subscribeToChanges() {
+  private async subscribeToChanges() {
     const id = this.partida_id();
     if (!id) return;
 
+    // Evitar suscribirse múltiples veces al mismo canal
+    const topic = `realtime:game:${id}`;
+    if (this.supabase.getChannels().find((c) => c.topic === topic)) {
+      console.log(
+        `[Realtime] Ya estamos suscritos al canal principal: ${topic}`,
+      );
+      // Sin embargo, podemos necesitar suscribirnos a las fichas si no lo estábamos
+      const mi = this.miJugador();
+      if (mi) this.subscribeMisFichas(mi.id);
+      return;
+    }
+
+    // Si hubiese otros canales de OTRAS partidas, podríamos limpiarlos individualmente.
+    // Para simplificar, limpiaremos canales viejos que no sean este.
+    const canalesViejos = this.supabase
+      .getChannels()
+      .filter((c) => c.topic !== topic && !c.topic.includes('fichas_manos:'));
+    for (const c of canalesViejos) {
+      await this.supabase.removeChannel(c);
+    }
+
+    const mi = this.miJugador();
+
+    // Crear un único canal para la partida para optimizar
+    const channel = this.supabase.channel(`game:${id}`);
+
+    // DEBUG GENERAL
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public' },
+      (payload) => {
+        console.log(
+          '[Realtime Master DEBUG] Evento en schema public:',
+          payload,
+        );
+      },
+    );
+
     // Suscribirse a cambios en partidas
-    this.supabase
-      .channel(`partidas:${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'partidas',
-          filter: `id=eq.${id}`,
-        },
-        (payload: any) => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'partidas',
+        filter: `id=eq.${id}`,
+      },
+      (payload: any) => {
+        this.ngZone.run(() => {
           this.partida.set(payload.new);
-        },
-      )
-      .subscribe();
+        });
+      },
+    );
 
     // Suscribirse a jugadores
-    this.supabase.channel(`jugadores:${id}`).on(
+    channel.on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'jugadores', filter: `partida_id=eq.${id}` },
-      async () => {
-        await this.loadJugadores();
-      }
-    ).subscribe();
+      {
+        event: '*',
+        schema: 'public',
+        table: 'jugadores',
+        filter: `partida_id=eq.${id}`,
+      },
+      async (payload: any) => {
+        console.log('[Realtime] Cambio en jugadores:', payload);
+
+        if (payload.eventType === 'INSERT') {
+          this.ngZone.run(() => {
+            const current = this.jugadores();
+            const exists = current.find((j) => j.id === payload.new.id);
+            if (!exists) {
+              this.jugadores.set(
+                [...current, payload.new].sort(
+                  (a, b) => a.posicion - b.posicion,
+                ),
+              );
+            }
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          this.ngZone.run(() => {
+            const current = this.jugadores();
+            const updated = current.map((j) =>
+              j.id === payload.new.id ? payload.new : j,
+            );
+            this.jugadores.set(updated.sort((a, b) => a.posicion - b.posicion));
+          });
+        } else {
+          // DELETE o cualquier otro
+          await this.loadJugadores();
+        }
+
+        // Al recargar jugadores podría habernos asignado un miJugador() nuevo
+        const nuevoMi = this.miJugador();
+        if (nuevoMi && !mi) {
+          // Si antes no teníamos jugador y ahora sí, escuchar sus manos
+          this.subscribeMisFichas(nuevoMi.id);
+        }
+      },
+    );
 
     // Suscribirse a cambios en manos
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'manos',
+        filter: `partida_id=eq.${id}`,
+      },
+      async (payload: any) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          this.ngZone.run(() => {
+            const current = this.manoActual();
+            if (current && payload.new) {
+              this.manoActual.set({ ...current, ...payload.new });
+            }
+          });
+        }
+
+        await this.loadManoActual(); // De cualquier forma, recargar para asegurar
+        await this.loadFichasEnMesa();
+        await this.loadMisFichas();
+      },
+    );
+
+    // Suscribirse a fichas en mesa
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'fichas_mesa' },
+      async (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          await this.loadFichasEnMesa();
+        }
+      },
+    );
+
+    channel.subscribe((status) => {
+      console.log('Realtime channel status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('Realtime OK. Eventos deben llegar.');
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        console.error('Realtime error/closed:', status);
+      }
+    });
+
+    // Suscribirse a mis fichas si ya sabemos quiénes somos
+    if (mi) {
+      this.subscribeMisFichas(mi.id);
+    }
+  }
+
+  private subscribeMisFichas(jugadorId: string) {
+    const channelName = `fichas_manos:${jugadorId}`;
+
+    // Evitar suscribirse nuevamente si ya está suscrito
+    if (
+      this.supabase
+        .getChannels()
+        .find((c) => c.topic === `realtime:${channelName}`)
+    ) {
+      return;
+    }
+
+    // Escuchar fichas específicas del jugador actual
     this.supabase
-      .channel(`manos:${id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'manos',
-          filter: `partida_id=eq.${id}`,
+          table: 'fichas_manos',
+          filter: `jugador_id=eq.${jugadorId}`,
         },
         async () => {
-          await this.loadManoActual();
-          await this.loadFichasEnMesa();
+          await this.loadMisFichas();
         },
       )
       .subscribe();
-
-    // Suscribirse a fichas en mesa
-    this.supabase
-      .channel(`fichas_mesa:${id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'fichas_mesa' },
-        async (payload) => {
-          if (
-            payload.eventType === 'INSERT' ||
-            payload.eventType === 'UPDATE'
-          ) {
-            await this.loadFichasEnMesa();
-          }
-        },
-      )
-      .subscribe();
-
-    // Suscribirse a mis fichas
-    const mi = this.miJugador();
-    if (mi) {
-      this.supabase
-        .channel(`fichas_manos:${mi.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'fichas_manos',
-            filter: `jugador_id=eq.${mi.id}`,
-          },
-          async () => {
-            await this.loadMisFichas();
-          },
-        )
-        .subscribe();
-    }
   }
 
   // ==================== SALAS ====================
@@ -416,6 +538,16 @@ export class GameService {
 
       console.log('[crearSala] Token obtenido, llamando Edge Function...');
 
+      const actualUserId =
+        this.user_id() ||
+        localStorage.getItem('guest_user_id') ||
+        `temp_${Math.random().toString(36).substring(7)}`;
+
+      if (!this.user_id()) {
+        localStorage.setItem('guest_user_id', actualUserId);
+        this.user_id.set(actualUserId); // Lo forzamos en el signal para que "loadMisFichas" lo pille.
+      }
+
       // Usar fetch directo para mayor control
       const resp = await fetch(
         `${environment.supabaseUrl}/functions/v1/crear-sala`,
@@ -428,9 +560,7 @@ export class GameService {
           body: JSON.stringify({
             nombre: nombreJugador,
             conBots: false,
-            userId:
-              this.user_id() ||
-              `temp_${Math.random().toString(36).substring(7)}`,
+            userId: actualUserId,
           }),
         },
       );
@@ -482,6 +612,16 @@ export class GameService {
 
       console.log('[unirseASala] Token obtenido, llamando Edge Function...');
 
+      const actualUserId =
+        this.user_id() ||
+        localStorage.getItem('guest_user_id') ||
+        `temp_${Math.random().toString(36).substring(7)}`;
+
+      if (!this.user_id()) {
+        localStorage.setItem('guest_user_id', actualUserId);
+        this.user_id.set(actualUserId); // Lo forzamos en el signal para que "loadMisFichas" lo pille.
+      }
+
       // Usar fetch directo para mayor control
       const resp = await fetch(
         `${environment.supabaseUrl}/functions/v1/unirse-sala`,
@@ -494,9 +634,7 @@ export class GameService {
           body: JSON.stringify({
             codigoSala: codigo.toUpperCase(),
             nombre: nombreJugador,
-            userId:
-              this.user_id() ||
-              `temp_${Math.random().toString(36).substring(7)}`,
+            userId: actualUserId,
           }),
         },
       );
@@ -571,14 +709,23 @@ export class GameService {
 
       const data = await resp.json();
 
-      if (!data?.success) {
+      if (data.error || (!data.partidaId && !data.success)) {
         this.errorMessage$.next(
-          data?.message || 'No se pudo iniciar la partida',
+          data.error || data.message || 'No se pudo iniciar la partida',
         );
         return false;
       }
 
       this.toastMessage$.next('¡Partida iniciada!');
+
+      // Actualizar el estado de la partida localmente para no depender solo de Realtime
+      const partidaActual = this.partida();
+      if (partidaActual) {
+        this.ngZone.run(() => {
+          this.partida.set({ ...partidaActual, estado: 'en_curso' });
+        });
+      }
+
       return true;
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : 'Error desconocido';

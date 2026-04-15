@@ -244,29 +244,80 @@ export class TableroComponent implements OnInit {
   private gameService = signal<GameService | null>(null);
   debug = signal(false);
   mostrarGrid = signal(false);
+  isDemoMode = signal(false);
 
   // Propiedades locales
-  jugadores = signal<Jugador[]>([]);
-  misFichas = signal<Ficha[]>([]);
-  fichasEnMesa = signal<FichaEnMesa[]>([]);
-  manoActual = signal(1);
-  esmiTurno = signal(false);
-  extremosActuales = signal({
-    izq: null as number | null,
-    der: null as number | null,
-  });
-  puntuacion = signal({ eq0: 0, eq1: 0 });
-  turnoActualPosicion = signal(0);
-  miEquipo = signal(0);
   ultimaJugada = signal<JugadaHistorico | null>(null);
-
-  // Propiedades para espera
-  esperandoJugadores = signal(false);
-  codigoSala = computed(
-    () => this.gameService()?.partida?.()?.codigo_sala || '',
-  );
   iniciandoPartida = signal(false);
-  puedeIniciar = signal(false);
+
+  // Propiedades reactivas unificadas (Computed)
+  jugadores = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.jugadores() as unknown as Jugador[])
+      : this.gameService()?.jugadores() || [];
+  });
+
+  misFichas = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.fichasEnMano() as unknown as Ficha[])
+      : this.gameService()?.fichasEnMano() || [];
+  });
+
+  fichasEnMesa = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.fichasEnMesa() as unknown as FichaEnMesa[])
+      : this.gameService()?.fichasEnMesa() || [];
+  });
+
+  manoActual = computed(() => {
+    return this.isDemoMode()
+      ? 1
+      : this.gameService()?.partida()?.mano_actual || 1;
+  });
+
+  esmiTurno = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.esmiTurno()
+      : this.gameService()?.esmiTurno() || false;
+  });
+
+  extremosActuales = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.extremosActuales() as any)
+      : this.gameService()?.extremosActuales() || { izq: null, der: null };
+  });
+
+  puntuacion = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.puntuacion()
+      : this.gameService()?.puntuacion() || { eq0: 0, eq1: 0 };
+  });
+
+  turnoActualPosicion = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.turnoActual()
+      : this.gameService()?.manoActual()?.turno_actual || 0;
+  });
+
+  miEquipo = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.miJugador()?.equipo || 0
+      : this.gameService()?.miJugador()?.equipo || 0;
+  });
+
+  esperandoJugadores = computed(() => {
+    if (this.isDemoMode()) return false;
+    return this.gameService()?.partida()?.estado === 'esperando';
+  });
+
+  codigoSala = computed(() => {
+    return this.gameService()?.partida()?.codigo_sala || '';
+  });
+
+  puedeIniciar = computed(() => {
+    if (this.isDemoMode()) return false;
+    return this.esperandoJugadores() && this.jugadores().length === 4;
+  });
 
   // Computed
   fichasTablero = computed(() => {
@@ -295,26 +346,9 @@ export class TableroComponent implements OnInit {
       const isDemo = gameId?.includes('DEMO') || gameId?.includes('demo');
 
       if (isDemo) {
+        this.isDemoMode.set(true);
         // Modo demo mejorado
         this.demoService.inicializarDemo('manual');
-
-        // Sincronizar señales
-        effect(() => {
-          this.jugadores.set(
-            this.demoService.jugadores() as unknown as Jugador[],
-          );
-          this.misFichas.set(
-            this.demoService.fichasEnMano() as unknown as Ficha[],
-          );
-          this.fichasEnMesa.set(
-            this.demoService.fichasEnMesa() as unknown as FichaEnMesa[],
-          );
-          this.esmiTurno.set(this.demoService.esmiTurno());
-          this.extremosActuales.set(this.demoService.extremosActuales() as any);
-          this.puntuacion.set(this.demoService.puntuacion());
-          this.turnoActualPosicion.set(this.demoService.turnoActual());
-          this.miEquipo.set(this.demoService.miJugador()?.equipo || 0);
-        });
 
         // Suscribirse a eventos del demo
         this.demoService.fichaJugada$.subscribe(({ jugador, ficha }) => {
@@ -359,6 +393,7 @@ export class TableroComponent implements OnInit {
           this.audio.playManoLimpia();
         });
       } else if (gameId) {
+        this.isDemoMode.set(false);
         // Modo normal con GameService
         const game = this.realGameService;
         this.gameService.set(game);
@@ -366,28 +401,6 @@ export class TableroComponent implements OnInit {
         // Guardar el código de sala
 
         await game.setCurrentGame(gameId);
-
-        // Sincronizar señales
-        effect(() => {
-          this.jugadores.set(game.jugadores());
-          this.misFichas.set(game.fichasEnMano());
-          this.fichasEnMesa.set(game.fichasEnMesa());
-          this.manoActual.set(game.partida()?.mano_actual || 1);
-          this.esmiTurno.set(game.esmiTurno());
-          this.extremosActuales.set(game.extremosActuales());
-          this.puntuacion.set(game.puntuacion());
-          this.turnoActualPosicion.set(game.manoActual()?.turno_actual || 0);
-          this.miEquipo.set(game.miJugador()?.equipo || 0);
-
-          // Verificar si estamos esperando jugadores
-          const partida = game.partida();
-          if (partida) {
-            this.esperandoJugadores.set(partida.estado === 'esperando');
-            this.puedeIniciar.set(
-              partida.estado === 'esperando' && this.jugadores().length === 4,
-            );
-          }
-        });
 
         // Suscribirse a mensajes
         game.toastMessage$.subscribe((msg) => {
@@ -500,7 +513,6 @@ export class TableroComponent implements OnInit {
       if (exito) {
         this.toast.showToast('¡Partida iniciada!', 'success', 3000);
         this.audio.playTurno();
-        this.esperandoJugadores.set(false);
       } else {
         this.toast.showToast('Error al iniciar la partida', 'error', 3000);
       }
