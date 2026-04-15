@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================
+    // PARTIDAS (Games)
+    // ============================================================
+    match /partidas/{partidaId} {
+      // Allow reading if the user is a player in the game
+      function isPlayer() {
+        return request.auth != null && 
+               request.auth.uid in resource.data.jugadores;
+      }
+      
+      // Allow creating if authenticated and providing 4 players
+      allow create: if request.auth != null &&
+                       request.resource.data.jugadores.size() == 4;
+      
+      // Allow reading if player in the game
+      allow read: if isPlayer();
+      
+      // Allow updates only through Cloud Functions (not directly from client)
+      // This ensures game logic integrity
+      allow update, delete: if false;
+    }
+    
+    // ============================================================
+    // MESAS (Current hand/board state - public to all players)
+    // ============================================================
+    match /mesas/{mesaId} {
+      // Allow reading if authenticated (players only via function validation)
+      allow read: if request.auth != null;
+      
+      // No direct writes from client - only through Cloud Functions
+      allow create, update, delete: if false;
+    }
+    
+    // ============================================================
+    // MANOS (Player hands - PRIVATE)
+    // ============================================================
+    match /manos/{manoId} {
+      // Document ID format: {partidaId}_{userId}
+      // Extract the player ID from the document ID
+      function getPlayerIdFromDocId() {
+        // manoId format is "partidaId_userId"
+        // We need to extract the userId part
+        return manoId.split('_')[1];
+      }
+      
+      // Allow reading only if the user is the owner of the hand
+      allow read: if request.auth != null && 
+                     request.auth.uid == getPlayerIdFromDocId();
+      
+      // No direct writes from client - only through Cloud Functions
+      allow create, update, delete: if false;
+    }
+    
+    // ============================================================
+    // LOCKDOWN: All other collections denied by default
+    // ============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

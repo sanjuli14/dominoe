@@ -1,0 +1,353 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================== MODERN PRO GAMING THEME - TWITCH OPTIMIZED ==================== */
+
+:root {
+  /* Primary Colors - Purple/Cyan Professional */
+  --primary: #9d4edd;
+  --primary-light: #c77dff;
+  --primary-dark: #5a189a;
+
+  /* Accent Colors - Neon Effects */
+  --accent-pink: #ff006e;
+  --accent-cyan: #00f5ff;
+  --accent-lime: #39ff14;
+  --accent-gold: #ffd60a;
+
+  /* Neutrals */
+  --dark-bg: #0d0221;
+  --darker-bg: #030011;
+  --card-bg: #1a0033;
+  --border-color: #3a0a66;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #808080;
+
+  /* Felt Table - Green felt for Dominó */
+  --felt-table: #0f4c1e;
+  --felt-border: #00d084;
+
+  /* Status Colors */
+  --success: #39ff14;
+  --error: #ff006e;
+  --warning: #ffa700;
+  --info: #00f5ff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #030011 0%, #0d0221 50%, #1a0033 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* ==================== SCROLLBAR ==================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary) 0%, var(--accent-cyan) 100%);
+  border-radius: 5px;
+  border: 2px solid var(--dark-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--primary-light) 0%, var(--accent-cyan) 100%);
+}
+
+/* ==================== GLASS PANEL ==================== */
+.glass-panel {
+  background: rgba(26, 0, 51, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7),
+              inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== FELT TABLE ==================== */
+.felt-table {
+  background: linear-gradient(135deg, #0f4c1e 0%, #0d3f18 50%, #0a2610 100%);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8),
+              inset 0 0 30px rgba(15, 255, 150, 0.1);
+  position: relative;
+  border: 4px solid var(--felt-border);
+}
+
+.felt-table::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.05) 2px,
+      rgba(0, 0, 0, 0.05) 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.05) 2px,
+      rgba(0, 0, 0, 0.05) 4px
+    );
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+/* ==================== BUTTONS ==================== */
+.btn-primary {
+  @apply px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold rounded-lg;
+  @apply hover:from-purple-500 hover:to-purple-700 transition-all duration-300;
+  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
+  @apply border border-purple-400/50;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.btn-accent {
+  @apply px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-lg;
+  @apply hover:from-cyan-400 hover:to-blue-500 transition-all duration-300;
+  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
+  @apply border border-cyan-400/50;
+}
+
+.btn-success {
+  @apply px-6 py-3 bg-gradient-to-r from-lime-500 to-green-600 text-black font-bold rounded-lg;
+  @apply hover:from-lime-400 hover:to-green-500 transition-all duration-300;
+  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
+}
+
+.btn-danger {
+  @apply px-6 py-3 bg-gradient-to-r from-pink-600 to-red-600 text-white font-bold rounded-lg;
+  @apply hover:from-pink-500 hover:to-red-500 transition-all duration-300;
+  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
+}
+
+button:disabled {
+  @apply opacity-50 cursor-not-allowed scale-100 !important;
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(157, 78, 221, 0.4),
+                0 0 20px rgba(199, 125, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(157, 78, 221, 0.6),
+                0 0 40px rgba(199, 125, 255, 0.4);
+  }
+}
+
+@keyframes cyber-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px var(--accent-cyan), 0 0 20px var(--primary);
+  }
+  50% {
+    text-shadow: 0 0 20px var(--accent-cyan), 0 0 40px var(--primary),
+                 0 0 60px var(--accent-pink);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-cyber-glow {
+  animation: cyber-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ==================== TYPOGRAPHY ==================== */
+.title-xl {
+  font-family: 'Poppins', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--primary) 50%, var(--accent-pink) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.title-lg {
+  font-family: 'Poppins', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--accent-cyan);
+}
+
+.title-md {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+}
+
+.subtitle-lg {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+/* ==================== CARDS ==================== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  background: rgba(58, 10, 102, 0.8);
+  border-color: var(--primary-light);
+  box-shadow: 0 0 30px rgba(157, 78, 221, 0.3);
+  transform: translateY(-4px);
+}
+
+/* ==================== BADGES ==================== */
+.badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background: rgba(57, 255, 20, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.badge-error {
+  background: rgba(255, 0, 110, 0.2);
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+.badge-info {
+  background: rgba(0, 245, 255, 0.2);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+}
+
+/* ==================== TOAST NOTIFICATIONS ==================== */
+.toast-notification {
+  position: fixed;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  animation: slide-up 0.4s ease-out;
+  z-index: 9999;
+  border-left: 4px solid;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.toast-success {
+  background: rgba(57, 255, 20, 0.15);
+  color: var(--success);
+  border-left-color: var(--success);
+}
+
+.toast-error {
+  background: rgba(255, 0, 110, 0.15);
+  color: var(--error);
+  border-left-color: var(--error);
+}
+
+.toast-info {
+  background: rgba(0, 245, 255, 0.15);
+  color: var(--accent-cyan);
+  border-left-color: var(--accent-cyan);
+}
+
+/* ==================== GAMING STYLES ==================== */
+.gaming-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--accent-cyan);
+}
+
+.gaming-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+}
+
+.ficha-base {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
