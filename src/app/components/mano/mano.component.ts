@@ -8,7 +8,7 @@ import { Ficha } from '../../services/game.service';
   standalone: true,
   imports: [CommonModule, FichaComponent],
   template: `
-    <div class="fixed bottom-0 left-0 right-0 h-36 bg-twitch-dark border-t border-twitch-gray z-40">
+    <div class="fixed bottom-0 left-0 right-0 h-52 bg-twitch-dark border-t border-twitch-gray z-40">
       <!-- Turn indicator -->
       <div *ngIf="misTurno" class="absolute top-2 left-4 flex items-center gap-2">
         <span class="status-dot live"></span>
@@ -28,8 +28,8 @@ import { Ficha } from '../../services/game.service';
         <!-- Fichas -->
         <div
           *ngFor="let ficha of fichas; let idx = index"
-          class="flex-shrink-0 transition-all duration-200 hover:scale-110 cursor-pointer"
-          [class.-translate-y-4]="seleccionada() === idx"
+          class="flex-shrink-0 w-24 h-44 transition-all duration-200 hover:scale-105 cursor-pointer"
+          [class.-translate-y-6]="seleccionada() === idx"
         >
           <app-ficha
             [valor_a]="ficha.valor_a"
@@ -37,6 +37,7 @@ import { Ficha } from '../../services/game.service';
             [id]="ficha.id"
             [selected]="seleccionada() === idx"
             [disabled]="!misTurno"
+            [vertical]="true"
             (fichaClicked)="onFichaClicked(ficha, idx)"
             (fichaDoubleClicked)="onFichaDoubleClicked(ficha, idx)"
           ></app-ficha>

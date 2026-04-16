@@ -15,54 +15,93 @@ export interface Ficha {
   template: `
     <div
       #fichaElement
-      class="ficha-base w-32 h-16 relative cursor-grab active:cursor-grabbing
-             bg-gradient-to-b from-ivory via-yellow-50 to-yellow-100
-             rounded-lg shadow-ficha border-2 border-amber-300
-             transition-all duration-300 hover:scale-110 hover:shadow-2xl
-             flex items-center justify-center gap-1
+      class="ficha-base relative cursor-grab active:cursor-grabbing
+             transition-all duration-300 hover:scale-110
              select-none"
+      [class.w-32]="!vertical"
+      [class.h-16]="!vertical"
+      [class.w-16]="vertical"
+      [class.h-32]="vertical"
       [style.transform]="'rotate(' + rotation + 'deg)'"
       (click)="onClick()"
       (mousedown)="onMouseDown($event)"
       [class.opacity-50]="disabled"
       [class.cursor-not-allowed]="disabled"
     >
-      <!-- Centro hendido -->
-      <div class="absolute inset-0 flex">
-        <div
-          class="w-1/2 border-r-2 border-amber-300 flex flex-col items-center justify-center"
-        >
-          <div
-            class="aspect-square w-full p-2 flex flex-wrap content-center justify-center gap-1"
-          >
-            <!-- Puntos lado A -->
-            <ng-container *ngFor="let i of generateDots(valor_a)">
-              <div class="w-2.5 h-2.5 bg-ebony rounded-full dot"></div>
-            </ng-container>
-          </div>
-        </div>
-        <div class="w-1/2 flex flex-col items-center justify-center">
-          <div
-            class="aspect-square w-full p-2 flex flex-wrap content-center justify-center gap-1"
-          >
-            <!-- Puntos lado B -->
-            <ng-container *ngFor="let i of generateDots(valor_b)">
-              <div class="w-2.5 h-2.5 bg-ebony rounded-full dot"></div>
-            </ng-container>
-          </div>
-        </div>
-      </div>
+      <!-- SVG Horizontal -->
+      <svg *ngIf="!vertical" class="w-full h-full" viewBox="0 0 64 32" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="hueso-h-{{id}}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#FFFEF5" />
+            <stop offset="50%" stop-color="#F5F5DC" />
+            <stop offset="100%" stop-color="#E8E4D0" />
+          </linearGradient>
+          <linearGradient id="metallic-h-{{id}}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#8B7355" />
+            <stop offset="30%" stop-color="#D4C5B0" />
+            <stop offset="50%" stop-color="#F5F5DC" />
+            <stop offset="70%" stop-color="#D4C5B0" />
+            <stop offset="100%" stop-color="#8B7355" />
+          </linearGradient>
+          <filter id="pipRelief-h-{{id}}">
+            <feDropShadow dx="0.3" dy="0.3" stdDeviation="0.3" flood-color="#000" flood-opacity="0.5"/>
+          </filter>
+        </defs>
 
-      <!-- Efecto de relieve -->
-      <div
-        class="absolute inset-0 rounded-lg pointer-events-none
-               shadow-[inset_1px_1px_2px_rgba(255,255,255,0.5),inset_-1px_-1px_2px_rgba(0,0,0,0.1)]"
-      ></div>
+        <rect x="1" y="1" width="62" height="30" rx="4" fill="rgba(0,0,0,0.3)"/>
+        <rect x="0" y="0" width="64" height="32" rx="4" [attr.fill]="'url(#hueso-h-' + id + ')'" stroke="#C4B49A" stroke-width="1"/>
+        <rect x="2" y="2" width="60" height="28" rx="2" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+
+        <line x1="32" y1="2" x2="32" y2="30" [attr.stroke]="'url(#metallic-h-' + id + ')'" stroke-width="2"/>
+        <line x1="31" y1="2" x2="31" y2="30" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>
+        <line x1="33" y1="2" x2="33" y2="30" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>
+
+        <g transform="translate(16, 16)">
+          <circle *ngFor="let pip of getPips(valor_a)" [attr.cx]="pip.x * 1" [attr.cy]="pip.y * 1.5" r="2" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
+        </g>
+        <g transform="translate(48, 16)">
+          <circle *ngFor="let pip of getPips(valor_b)" [attr.cx]="pip.x * 1" [attr.cy]="pip.y * 1.5" r="3" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
+        </g>
+      </svg>
+
+      <!-- SVG Vertical -->
+      <svg *ngIf="vertical" class="w-full h-full" viewBox="0 0 32 64" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="hueso-v-{{id}}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#FFFEF5" />
+            <stop offset="50%" stop-color="#F5F5DC" />
+            <stop offset="100%" stop-color="#E8E4D0" />
+          </linearGradient>
+          <linearGradient id="metallic-v-{{id}}" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#8B7355" />
+            <stop offset="30%" stop-color="#D4C5B0" />
+            <stop offset="50%" stop-color="#F5F5DC" />
+            <stop offset="70%" stop-color="#D4C5B0" />
+            <stop offset="100%" stop-color="#8B7355" />
+          </linearGradient>
+          <filter id="pipRelief-v-{{id}}">
+            <feDropShadow dx="0.3" dy="0.3" stdDeviation="0.3" flood-color="#000" flood-opacity="0.5"/>
+          </filter>
+        </defs>
+
+        <rect x="1" y="1" width="30" height="62" rx="4" fill="rgba(0,0,0,0.3)"/>
+        <rect x="0" y="0" width="32" height="64" rx="4" [attr.fill]="'url(#hueso-v-' + id + ')'" stroke="#C4B49A" stroke-width="1"/>
+        <rect x="2" y="2" width="28" height="60" rx="2" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+
+        <line x1="2" y1="32" x2="30" y2="32" [attr.stroke]="'url(#metallic-v-' + id + ')'" stroke-width="2"/>
+        <line x1="2" y1="31" x2="30" y2="31" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>
+        <line x1="2" y1="33" x2="30" y2="33" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>
+
+        <g transform="translate(16, 14)">
+          <circle *ngFor="let pip of getPips(valor_a)" [attr.cx]="pip.x * 1.5" [attr.cy]="pip.y * 1.5" r="2" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
+        </g>
+        <g transform="translate(16, 50)">
+          <circle *ngFor="let pip of getPips(valor_b)" [attr.cx]="pip.x * 1.5" [attr.cy]="pip.y * 1.5" r="2" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
+        </g>
+      </svg>
 
       <!-- Selection indicator -->
-      <div *ngIf="selected"
-           class="absolute inset-0 rounded-lg border-2 border-twitch-purple animate-twitch-glow">
-      </div>
+      <div *ngIf="selected" class="absolute inset-0 rounded-lg border-2 border-twitch-purple animate-twitch-glow pointer-events-none"></div>
     </div>
   `,
   styles: [
@@ -84,6 +123,7 @@ export class FichaComponent {
   @Input() disabled = false;
   @Input() selected = false;
   @Input() rotation = 0;
+  @Input() vertical = false; // Nueva propiedad para orientación vertical
   @Output() fichaClicked = new EventEmitter<Ficha>();
   @Output() fichaDoubleClicked = new EventEmitter<Ficha>();
 
@@ -104,6 +144,24 @@ export class FichaComponent {
       9: [0, 1, 2, 3, 4, 5, 6, 7, 8],
     };
     return patterns[value] || [];
+  }
+
+  // Posiciones de los pips (puntos) en el patrón de dominó
+  getPips(valor: number): { x: number; y: number }[] {
+    const d = 6; // Distancia desde centro
+    const positions: { [key: number]: { x: number; y: number }[] } = {
+      0: [],
+      1: [{ x: 0, y: 0 }],
+      2: [{ x: -d, y: -d }, { x: d, y: d }],
+      3: [{ x: -d, y: -d }, { x: 0, y: 0 }, { x: d, y: d }],
+      4: [{ x: -d, y: -d }, { x: d, y: -d }, { x: -d, y: d }, { x: d, y: d }],
+      5: [{ x: -d, y: -d }, { x: d, y: -d }, { x: 0, y: 0 }, { x: -d, y: d }, { x: d, y: d }],
+      6: [{ x: -d, y: -d }, { x: -d, y: 0 }, { x: -d, y: d }, { x: d, y: -d }, { x: d, y: 0 }, { x: d, y: d }],
+      7: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: 0, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+      8: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: -d, y: 0 }, { x: d, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+      9: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: -d, y: 0 }, { x: 0, y: 0 }, { x: d, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+    };
+    return positions[valor] || [];
   }
 
   onClick() {
