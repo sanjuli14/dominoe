@@ -13,14 +13,8 @@ import { ToastService } from '../../services/toast.service';
   template: `
     <!-- App Container -->
     <div class="w-screen h-screen bg-twitch-black flex flex-col">
-
       <!-- Header Twitch Style -->
       <header class="nav-header shrink-0">
-        <div class="nav-brand">
-          <img src="assets/logo.svg" alt="La Esquina" class="w-8 h-8">
-          <span class="brand-gradient">LA ESQUINA</span>
-          <span class="badge badge-purple text-xs">BETA</span>
-        </div>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2 text-sm text-twitch-text-muted">
             <span class="status-dot live"></span>
@@ -32,20 +26,44 @@ import { ToastService } from '../../services/toast.service';
       <!-- Main Content -->
       <main class="flex-1 flex items-center justify-center p-6">
         <div class="w-full max-w-lg animate-fade-in">
+          <!-- Brand Logo -->
+          <div class="flex flex-col items-center justify-center mb-8">
+            <img
+              src="assets/logo.svg"
+              alt="La Esquina"
+              class="w-40 h-40 mb-3 drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+            />
+            <span
+              class="brand-gradient text-4xl tracking-wider font-extrabold uppercase"
+              >LA ESQUINA</span
+            >
+          </div>
 
           <!-- Stats Row -->
           <div class="grid grid-cols-3 gap-3 mb-6">
             <div class="card text-center py-4">
               <p class="text-2xl font-bold text-twitch-purple">4</p>
-              <p class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide">Jugadores</p>
+              <p
+                class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide"
+              >
+                Jugadores
+              </p>
             </div>
             <div class="card text-center py-4">
               <p class="text-2xl font-bold text-accent-success">2</p>
-              <p class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide">Equipos</p>
+              <p
+                class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide"
+              >
+                Equipos
+              </p>
             </div>
             <div class="card text-center py-4">
               <p class="text-2xl font-bold text-accent-info">200</p>
-              <p class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide">Puntos</p>
+              <p
+                class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide"
+              >
+                Puntos
+              </p>
             </div>
           </div>
 
@@ -55,7 +73,9 @@ import { ToastService } from '../../services/toast.service';
 
             <!-- Name Input -->
             <div class="mb-5">
-              <label class="block text-sm text-twitch-text-muted mb-2 font-medium">
+              <label
+                class="block text-sm text-twitch-text-muted mb-2 font-medium"
+              >
                 Tu nombre de jugador
               </label>
               <input
@@ -121,16 +141,10 @@ import { ToastService } from '../../services/toast.service';
           class="w-full input-twitch mb-4 uppercase tracking-widest text-center"
         />
         <div class="flex gap-3">
-          <button
-            (click)="cerrarModal()"
-            class="flex-1 btn-secondary py-3"
-          >
+          <button (click)="cerrarModal()" class="flex-1 btn-secondary py-3">
             Cancelar
           </button>
-          <button
-            (click)="unirseASala()"
-            class="flex-1 btn-primary py-3"
-          >
+          <button (click)="unirseASala()" class="flex-1 btn-primary py-3">
             Unirse
           </button>
         </div>
@@ -148,13 +162,19 @@ import { ToastService } from '../../services/toast.service';
           <h2 class="title-lg">Sala de Espera</h2>
           <div class="flex items-center gap-2">
             <span class="status-dot online"></span>
-            <span class="text-sm text-twitch-text-muted">{{ jugadores().length }}/4</span>
+            <span class="text-sm text-twitch-text-muted"
+              >{{ jugadores().length }}/4</span
+            >
           </div>
         </div>
 
         <!-- Código -->
-        <div class="bg-twitch-darker border border-twitch-gray rounded-lg p-4 mb-6">
-          <p class="text-xs text-twitch-text-muted uppercase mb-2">Código de sala</p>
+        <div
+          class="bg-twitch-darker border border-twitch-gray rounded-lg p-4 mb-6"
+        >
+          <p class="text-xs text-twitch-text-muted uppercase mb-2">
+            Código de sala
+          </p>
           <div class="flex items-center justify-between">
             <span class="text-4xl font-bold text-twitch-purple tracking-widest">
               {{ codigoSalaEspera() }}
@@ -170,7 +190,9 @@ import { ToastService } from '../../services/toast.service';
 
         <!-- Jugadores -->
         <div class="space-y-2 mb-6">
-          <p class="text-xs text-twitch-text-muted uppercase mb-3">Jugadores conectados</p>
+          <p class="text-xs text-twitch-text-muted uppercase mb-3">
+            Jugadores conectados
+          </p>
           <div
             *ngFor="let j of jugadores()"
             class="flex items-center justify-between p-3 bg-twitch-darker rounded-lg border border-twitch-gray"
@@ -179,7 +201,9 @@ import { ToastService } from '../../services/toast.service';
               <span class="status-dot online"></span>
               <span class="font-medium">{{ j.nombre }}</span>
             </div>
-            <span class="text-xs text-twitch-text-muted">Pos {{ j.posicion + 1 }}</span>
+            <span class="text-xs text-twitch-text-muted"
+              >Pos {{ j.posicion + 1 }}</span
+            >
           </div>
           <div
             *ngFor="let i of generarEspacios(4 - jugadores().length)"

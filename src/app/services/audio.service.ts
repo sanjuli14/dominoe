@@ -11,9 +11,85 @@ import { Injectable } from '@angular/core';
 export class AudioService {
   private audioContext: AudioContext | null = null;
   private isMuted = false;
+  private bgMusicBuffer: AudioBuffer | null = null;
+  private bgMusicSource: AudioBufferSourceNode | null = null;
+  private bgGainNode: GainNode | null = null;
+  private bgMusicPlaying = false;
 
   constructor() {
     this.initAudioContext();
+    this.loadBgMusic();
+  }
+
+  private async loadBgMusic() {
+    try {
+      const response = await fetch(
+        'assets/juliush-ritmo-de-cuba-son-cubano-tradicional-503313.mp3',
+      );
+      const arrayBuffer = await response.arrayBuffer();
+
+      if (this.audioContext) {
+        this.bgMusicBuffer =
+          await this.audioContext.decodeAudioData(arrayBuffer);
+      }
+    } catch (e) {
+      console.error('Error cargando o decodificando música de fondo', e);
+    }
+  }
+
+  playBgMusic() {
+    if (
+      !this.bgMusicBuffer ||
+      !this.audioContext ||
+      this.bgMusicPlaying ||
+      this.isMuted
+    )
+      return;
+
+    try {
+      this.bgMusicSource = this.audioContext.createBufferSource();
+      this.bgMusicSource.buffer = this.bgMusicBuffer;
+      this.bgMusicSource.loop = true;
+
+      this.bgGainNode = this.audioContext.createGain();
+      this.bgGainNode.gain.value = 0.1;
+
+      this.bgMusicSource.connect(this.bgGainNode);
+      this.bgGainNode.connect(this.audioContext.destination);
+
+      this.bgMusicSource.start(0);
+      this.bgMusicPlaying = true;
+    } catch (e) {
+      console.warn('Requiere interacción previa', e);
+    }
+  }
+
+  toggleBgMusic() {
+    if (!this.bgMusicBuffer) return false;
+
+    if (this.bgMusicPlaying) {
+      this.stopBgMusic();
+    } else {
+      this.playBgMusic();
+    }
+    return this.bgMusicPlaying;
+  }
+
+  private stopBgMusic() {
+    if (this.bgMusicSource) {
+      try {
+        this.bgMusicSource.stop();
+        this.bgMusicSource.disconnect();
+      } catch (e) {}
+      this.bgMusicSource = null;
+    }
+    this.bgMusicPlaying = false;
+  }
+
+  setBgVolume(volume: number) {
+    if (this.bgGainNode) {
+      this.bgGainNode.gain.value = Math.max(0, Math.min(1, volume));
+    }
   }
 
   private initAudioContext() {
@@ -28,6 +104,11 @@ export class AudioService {
 
   toggleMute() {
     this.isMuted = !this.isMuted;
+    if (this.isMuted && this.bgMusicPlaying) {
+      this.stopBgMusic();
+    } else if (!this.isMuted && !this.bgMusicPlaying) {
+      this.playBgMusic();
+    }
     return this.isMuted;
   }
 

@@ -1,4 +1,18 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  computed,
+  inject,
+  ChangeDetectionStrategy,
+  ViewChildren,
+  QueryList,
+  ElementRef,
+  AfterViewChecked,
+  HostListener,
+  DestroyRef,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -82,13 +96,12 @@ interface FichaTablero {
 @Component({
   selector: 'app-tablero',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    FichaComponent,
     ManoComponent,
     MarcadorComponent,
     ToastContainerComponent,
-    HistorialComponent,
   ],
   template: `
     <div class="w-screen h-screen bg-twitch-black flex flex-col">
@@ -620,6 +633,8 @@ export class TableroComponent implements OnInit {
     return this.calcularPosicionesSnake(fichasOrdenadas);
   });
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private route: ActivatedRoute,
     private toast: ToastService,
@@ -628,74 +643,88 @@ export class TableroComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.route.params.subscribe(async (params) => {
-      const gameId = params['id'];
-      const isDemo = gameId?.includes('DEMO') || gameId?.includes('demo');
+    this.route.params
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async (params) => {
+        const gameId = params['id'];
+        const isDemo = gameId?.includes('DEMO') || gameId?.includes('demo');
 
-      if (isDemo) {
-        this.isDemoMode.set(true);
-        this.demoService.inicializarDemo('manual');
+        if (isDemo) {
+          this.isDemoMode.set(true);
+          this.demoService.inicializarDemo('manual');
 
-        this.demoService.fichaJugada$.subscribe(({ jugador, ficha }) => {
-          if (!jugador.includes('STREAMER')) {
-            this.ultimaJugada.set({
-              id: `jugada-${Date.now()}`,
-              jugador: jugador,
-              ficha: ficha === 'PASÓ' ? '' : ficha,
-              timestamp: Date.now(),
-              tipo: ficha === 'PASÓ' ? 'paso' : 'jugada',
+          this.demoService.fichaJugada$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(({ jugador, ficha }) => {
+              if (!jugador.includes('STREAMER')) {
+                this.ultimaJugada.set({
+                  id: `jugada-${Date.now()}`,
+                  jugador: jugador,
+                  ficha: ficha === 'PASÓ' ? '' : ficha,
+                  timestamp: Date.now(),
+                  tipo: ficha === 'PASÓ' ? 'paso' : 'jugada',
+                });
+              }
+              this.toast.showToast(`${jugador} jugó ${ficha}`, 'cubano', 2000);
+              this.audio.playFichaClack();
             });
-          }
-          this.toast.showToast(`${jugador} jugó ${ficha}`, 'cubano', 2000);
-          this.audio.playFichaClack();
-        });
 
-        this.demoService.turnoChanged$.subscribe(({ jugador }) => {
-          if (jugador.includes('STREAMER')) {
-            this.toast.showToast('¡ES TU TURNO!', 'info', 2000);
-            this.audio.playTurno();
-          } else {
-            this.toast.showToast(`Turno de ${jugador}`, 'info', 1500);
-          }
-        });
+          this.demoService.turnoChanged$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(({ jugador }) => {
+              if (jugador.includes('STREAMER')) {
+                this.toast.showToast('¡ES TU TURNO!', 'info', 2000);
+                this.audio.playTurno();
+              } else {
+                this.toast.showToast(`Turno de ${jugador}`, 'info', 1500);
+              }
+            });
 
-        this.demoService.manoTerminada$.subscribe(({ ganador, puntos }) => {
-          this.ultimaJugada.set({
-            id: `mano-limpia-${Date.now()}`,
-            jugador: ganador,
-            ficha: `+${puntos}`,
-            timestamp: Date.now(),
-            tipo: 'mano-limpia',
-          });
-          this.toast.showToast(
-            `${ganador} ganó +${puntos} puntos`,
-            'success',
-            3000,
-          );
-          this.audio.playManoLimpia();
-        });
-      } else if (gameId) {
-        this.isDemoMode.set(false);
-        const game = this.realGameService;
-        this.gameService.set(game);
-        await game.setCurrentGame(gameId);
+          this.demoService.manoTerminada$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(({ ganador, puntos }) => {
+              this.ultimaJugada.set({
+                id: `mano-limpia-${Date.now()}`,
+                jugador: ganador,
+                ficha: `+${puntos}`,
+                timestamp: Date.now(),
+                tipo: 'mano-limpia',
+              });
+              this.toast.showToast(
+                `${ganador} ganó +${puntos} puntos`,
+                'success',
+                3000,
+              );
+              this.audio.playManoLimpia();
+            });
+        } else if (gameId) {
+          this.isDemoMode.set(false);
+          const game = this.realGameService;
+          this.gameService.set(game);
+          await game.setCurrentGame(gameId);
 
-        game.toastMessage$.subscribe((msg) => {
-          this.toast.showToast(msg, 'success', 3000);
-          this.audio.playFichaClack();
-        });
+          game.toastMessage$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((msg) => {
+              this.toast.showToast(msg, 'success', 3000);
+              this.audio.playFichaClack();
+            });
 
-        game.tallaMessage$.subscribe((msg) => {
-          this.toast.showEspontaneo(msg);
-          this.empezarCooldown(60);
-        });
+          game.tallaMessage$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((msg) => {
+              this.toast.showEspontaneo(msg);
+              this.empezarCooldown(60);
+            });
 
-        game.errorMessage$.subscribe((msg) => {
-          this.toast.showToast(msg, 'error', 3000);
-          this.audio.playError();
-        });
-      }
-    });
+          game.errorMessage$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((msg) => {
+              this.toast.showToast(msg, 'error', 3000);
+              this.audio.playError();
+            });
+        }
+      });
   }
 
   // ============================================

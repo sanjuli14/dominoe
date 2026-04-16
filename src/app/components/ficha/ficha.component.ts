@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import gsap from 'gsap';
 
@@ -12,6 +12,7 @@ export interface Ficha {
   selector: 'app-ficha',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       #fichaElement
@@ -73,19 +74,19 @@ export interface Ficha {
 
         <!-- Matte black pips - slightly irregular for realism -->
         <g transform="translate(16, 16)">
-          <circle *ngFor="let pip of getPips(valor_a); let i = index" 
-                  [attr.cx]="pip.x * 1.1" 
-                  [attr.cy]="pip.y * 1.6" 
-                  r="2.2" 
+          <circle *ngFor="let pip of getPips(valor_a); let i = index"
+                  [attr.cx]="pip.x * 1.1"
+                  [attr.cy]="pip.y * 1.6"
+                  r="2.2"
                   fill="#1a1a1a"
                   [attr.opacity]="0.9 + (i % 2) * 0.05"
                   [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
         </g>
         <g transform="translate(48, 16)">
-          <circle *ngFor="let pip of getPips(valor_b); let i = index" 
-                  [attr.cx]="pip.x * 1.1" 
-                  [attr.cy]="pip.y * 1.6" 
-                  r="2.2" 
+          <circle *ngFor="let pip of getPips(valor_b); let i = index"
+                  [attr.cx]="pip.x * 1.1"
+                  [attr.cy]="pip.y * 1.6"
+                  r="2.2"
                   fill="#1a1a1a"
                   [attr.opacity]="0.9 + (i % 2) * 0.05"
                   [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
@@ -130,19 +131,19 @@ export interface Ficha {
 
         <!-- Matte black pips for vertical -->
         <g transform="translate(16, 14)">
-          <circle *ngFor="let pip of getPips(valor_a); let i = index" 
-                  [attr.cx]="pip.x * 1.4" 
-                  [attr.cy]="pip.y * 1.4" 
-                  r="2.2" 
+          <circle *ngFor="let pip of getPips(valor_a); let i = index"
+                  [attr.cx]="pip.x * 1.4"
+                  [attr.cy]="pip.y * 1.4"
+                  r="2.2"
                   fill="#1a1a1a"
                   [attr.opacity]="0.9 + (i % 2) * 0.05"
                   [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
         </g>
         <g transform="translate(16, 50)">
-          <circle *ngFor="let pip of getPips(valor_b); let i = index" 
-                  [attr.cx]="pip.x * 1.4" 
-                  [attr.cy]="pip.y * 1.4" 
-                  r="2.2" 
+          <circle *ngFor="let pip of getPips(valor_b); let i = index"
+                  [attr.cx]="pip.x * 1.4"
+                  [attr.cy]="pip.y * 1.4"
+                  r="2.2"
                   fill="#1a1a1a"
                   [attr.opacity]="0.9 + (i % 2) * 0.05"
                   [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>

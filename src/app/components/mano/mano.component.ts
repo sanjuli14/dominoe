@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FichaComponent } from '../ficha/ficha.component';
 import { Ficha } from '../../services/game.service';
@@ -7,6 +14,7 @@ import { Ficha } from '../../services/game.service';
   selector: 'app-mano',
   standalone: true,
   imports: [CommonModule, FichaComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="fixed bottom-0 left-0 right-0 h-40 bg-twitch-dark border-t border-twitch-gray z-40"
@@ -38,7 +46,7 @@ import { Ficha } from '../../services/game.service';
 
         <!-- Fichas -->
         <div
-          *ngFor="let ficha of fichas; let idx = index"
+          *ngFor="let ficha of fichas; let idx = index; trackBy: trackByFicha"
           class="flex-shrink-0 w-20 h-36 transition-all duration-200 hover:scale-105 cursor-pointer"
           [class.-translate-y-6]="seleccionada() === idx"
         >
@@ -103,6 +111,11 @@ export class ManoComponent {
   @Output() pasarTurno = new EventEmitter<void>();
 
   seleccionada = signal<number>(-1);
+
+  trackByFicha(index: number, ficha: Ficha): string {
+    // Si la ficha no tiene un id único, usamos los valores
+    return ficha.id ? ficha.id : '' + ficha.valor_a + '_' + ficha.valor_b;
+  }
 
   onFichaClicked(ficha: Ficha, idx: number) {
     this.seleccionada.set(this.seleccionada() === idx ? -1 : idx);
