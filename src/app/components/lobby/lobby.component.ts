@@ -12,7 +12,9 @@ import { ToastService } from '../../services/toast.service';
   imports: [CommonModule, FormsModule],
   template: `
     <!-- App Container -->
-    <div class="w-full min-h-screen bg-twitch-black flex flex-col">
+    <div
+      class="w-full min-h-screen bg-twitch-black flex flex-col overflow-y-auto"
+    >
       <!-- Header Twitch Style -->
       <header class="nav-header shrink-0">
         <div class="flex items-center gap-4">
@@ -24,8 +26,8 @@ import { ToastService } from '../../services/toast.service';
       </header>
 
       <!-- Main Content -->
-      <main class="flex-1 flex items-center justify-center p-6">
-        <div class="w-full max-w-lg animate-fade-in">
+      <main class="flex-1 flex items-center justify-center p-6 py-12">
+        <div class="w-full max-w-lg animate-fade-in my-auto">
           <!-- Brand Logo -->
           <div class="flex flex-col items-center justify-center mb-8">
             <img
@@ -101,13 +103,6 @@ import { ToastService } from '../../services/toast.service';
                 class="w-full btn-secondary py-4 text-base"
               >
                 Unirse a Sala
-              </button>
-
-              <button
-                (click)="goToDemo()"
-                class="w-full btn-accent py-4 text-base"
-              >
-                Modo Demo
               </button>
             </div>
           </div>
