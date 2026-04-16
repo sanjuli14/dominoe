@@ -18,59 +18,52 @@ export class ToastService {
   // Tallas Cubanas por categoría de evento
   private tallasPorEvento = {
     // Al salir (jugar primera ficha)
+    // Al salir (el rompimiento)
     salir: [
-      '¡Se rompió el celofán!',
-      '¡Voy a mí!',
-      '¡Aquí empieza la función!',
-      '¡Salió el primer hueso!',
-      '¡Rompemos el hielo!',
+      '¡Asere, qué bolá!',
+      '¡Pinga, salí yo!',
+      '¡Qué clase talla el rompimiento!',
     ],
     // Al pasar turno
     pasar: [
-      '¡Agua!',
-      '¡Me quedé a pie!',
-      '¡Paso y no paso!',
-      '¡Aquí no hay nada!',
-      '¡Me comí un cable!',
-      '¡Sin novedad!',
+      '¡Pinga, se botó el ron!',
+      '¡Pásate veo!',
+      '¡Dame un buche ahí!',
+      '¡Tremendo mojón, me pasé!',
+      '¡Tú no sirves!',
+      '¡Dale agua, dale agua!',
+      '¡El que perdió da agua!',
     ],
     // Al trancar (cerrar el juego)
     trancar: [
-      '¡Se cerró el caney!',
-      '¡Aquí no pasa ni el viento!',
-      '¡Tranque cerrado!',
-      '¡Se acabó la vela!',
-      '¡Cerramos el negocio!',
+      '¡Tranqué, qué clase pinga!',
+      '¡Asere, se cerró esto!',
+      '¡Tú no sirves, aquí nadie pasa!',
     ],
     // Al ganar una mano
     ganar: [
-      '¡Toma tu data!',
-      '¡Suena el zapato!',
-      '¡Eso es un plato!',
-      '¡Paso y gano!',
-      '¡Qué mano tan buena!',
-      '¡Se acabó la función!',
+      '¡Qué clase pinga, gané!',
+      '¡Tú no sirves, toma tu data!',
+      '¡Asere, eso es un plato!',
     ],
     // Al ganar el juego (capote)
     capote: [
-      '¡Capote señores!',
-      '¡Eso es un zapatazo!',
-      '¡Ganamos la partida!',
-      '¡Se acabó el dominó!',
+      '¡Qué clase talla, tremendo zapatazo!',
+      '¡Pinga, ganamos la partida!',
+      '¡Asere, el que perdió da agua!',
     ],
     // Al jugar una mula/doble
     mula: [
-      '¡Mira ese doble!',
-      '¡Eso es un hueso!',
-      '¡Qué mula tan buena!',
-      '¡Saca la mulita!',
+      '¡Asere, mira esa mula!',
+      '¡Qué clase talla de doble!',
+      '¡Pinga, saca el hueso!',
     ],
     // Al tomar mucho tiempo
     tiempo: [
-      '¡Suelta el hueso, que se enfría!',
-      '¡Se acaba el siglo!',
-      '¡Pensando pa\' dónde!',
-      '¡Que no te duela la mano!',
+      '¡Dale agua, dale agua, que te demoras mucho!',
+      '¡Tremendo mojón estás pensando!',
+      '¡Tú no sirves, suelta el hueso!',
+      '¡Asere, suelta el hueso ya!',
     ],
   };
 
@@ -93,7 +86,10 @@ export class ToastService {
     }
   }
 
-  showCubano(tipoEvento: keyof typeof this.tallasPorEvento = 'ganar', delay: number = 500) {
+  showCubano(
+    tipoEvento: keyof typeof this.tallasPorEvento = 'ganar',
+    delay: number = 500,
+  ) {
     const tallas = this.tallasPorEvento[tipoEvento];
     const talla = tallas[Math.floor(Math.random() * tallas.length)];
     setTimeout(() => {

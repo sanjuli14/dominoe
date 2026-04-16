@@ -808,8 +808,10 @@ export class GameService {
 
       const data = await resp.json();
 
-      if (!data?.success) {
-        this.errorMessage$.next(data?.message || 'No se pudo jugar la ficha');
+      if (!data?.success && !data?.exito) {
+        this.errorMessage$.next(
+          data?.message || data?.error || 'No se pudo jugar la ficha',
+        );
         return false;
       }
 
