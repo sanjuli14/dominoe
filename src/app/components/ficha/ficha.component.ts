@@ -59,11 +59,10 @@ export interface Ficha {
                shadow-[inset_1px_1px_2px_rgba(255,255,255,0.5),inset_-1px_-1px_2px_rgba(0,0,0,0.1)]"
       ></div>
 
-      <!-- Indicador de selección -->
-      <div
-        *ngIf="selected"
-        class="absolute inset-0 rounded-lg border-2 border-gold animate-pulse-glow"
-      ></div>
+      <!-- Selection indicator -->
+      <div *ngIf="selected"
+           class="absolute inset-0 rounded-lg border-2 border-twitch-purple animate-twitch-glow">
+      </div>
     </div>
   `,
   styles: [

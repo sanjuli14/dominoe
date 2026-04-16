@@ -1,41 +1,40 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ==================== MODERN PRO GAMING THEME - TWITCH OPTIMIZED ==================== */
+/* ==================== TWITCH PROFESSIONAL THEME ==================== */
 
 :root {
-  /* Primary Colors - Purple/Cyan Professional */
-  --primary: #9d4edd;
-  --primary-light: #c77dff;
-  --primary-dark: #5a189a;
+  /* Twitch Brand Palette */
+  --twitch-purple: #9146FF;
+  --twitch-purple-dark: #5C2F8F;
+  --twitch-purple-light: #B88DFF;
+  --twitch-black: #0E0E10;
+  --twitch-dark: #18181B;
+  --twitch-darker: #1F1F23;
+  --twitch-gray: #2D2D35;
+  --twitch-gray-light: #3D3D44;
+  --twitch-text: #EFEFF1;
+  --twitch-text-muted: #ADADB8;
 
-  /* Accent Colors - Neon Effects */
-  --accent-pink: #ff006e;
-  --accent-cyan: #00f5ff;
-  --accent-lime: #39ff14;
-  --accent-gold: #ffd60a;
+  /* Accent Colors */
+  --accent-live: #E91916;
+  --accent-success: #00F593;
+  --accent-warning: #FFB800;
+  --accent-info: #00D4AA;
 
-  /* Neutrals */
-  --dark-bg: #0d0221;
-  --darker-bg: #030011;
-  --card-bg: #1a0033;
-  --border-color: #3a0a66;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --text-muted: #808080;
+  /* Felt Table - Professional Green */
+  --felt-dark: #0A2915;
+  --felt-mid: #0F3D1F;
+  --felt-light: #145229;
+  --felt-border: #1A6B33;
 
-  /* Felt Table - Green felt for Dominó */
-  --felt-table: #0f4c1e;
-  --felt-border: #00d084;
-
-  /* Status Colors */
-  --success: #39ff14;
-  --error: #ff006e;
-  --warning: #ffa700;
-  --info: #00f5ff;
+  /* Status */
+  --status-online: #00F593;
+  --status-away: #FFB800;
+  --status-offline: #ADADB8;
 }
 
 * {
@@ -51,54 +50,55 @@ html, body {
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #030011 0%, #0d0221 50%, #1a0033 100%);
-  background-attachment: fixed;
-  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--twitch-black);
+  color: var(--twitch-text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
-/* ==================== SCROLLBAR ==================== */
+/* ==================== SCROLLBAR - TWITCH STYLE ==================== */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--twitch-dark);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--primary) 0%, var(--accent-cyan) 100%);
-  border-radius: 5px;
-  border: 2px solid var(--dark-bg);
+  background: var(--twitch-gray);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--primary-light) 0%, var(--accent-cyan) 100%);
+  background: var(--twitch-purple);
 }
 
-/* ==================== GLASS PANEL ==================== */
+/* ==================== TWITCH UI COMPONENTS ==================== */
 .glass-panel {
-  background: rgba(26, 0, 51, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(157, 78, 221, 0.3);
-  border-radius: 16px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7),
-              inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 27, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--twitch-gray);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* ==================== FELT TABLE ==================== */
+.glass-panel-purple {
+  background: rgba(24, 24, 27, 0.98);
+  border: 1px solid var(--twitch-purple);
+  box-shadow: 0 0 20px rgba(145, 70, 255, 0.15);
+}
+
+/* ==================== FELT TABLE - PROFESSIONAL ==================== */
 .felt-table {
-  background: linear-gradient(135deg, #0f4c1e 0%, #0d3f18 50%, #0a2610 100%);
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8),
-              inset 0 0 30px rgba(15, 255, 150, 0.1);
+  background: radial-gradient(ellipse at center, var(--felt-mid) 0%, var(--felt-dark) 100%);
   position: relative;
-  border: 4px solid var(--felt-border);
+  border: 3px solid var(--felt-border);
 }
 
 .felt-table::before {
@@ -109,245 +109,257 @@ body {
   right: 0;
   bottom: 0;
   background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.05) 2px,
-      rgba(0, 0, 0, 0.05) 4px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.05) 2px,
-      rgba(0, 0, 0, 0.05) 4px
-    );
+    radial-gradient(circle at 20% 30%, rgba(20, 82, 41, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(15, 61, 31, 0.4) 0%, transparent 40%);
   pointer-events: none;
-  border-radius: 12px;
 }
 
-/* ==================== BUTTONS ==================== */
-.btn-primary {
-  @apply px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold rounded-lg;
-  @apply hover:from-purple-500 hover:to-purple-700 transition-all duration-300;
-  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
-  @apply border border-purple-400/50;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-}
-
-.btn-accent {
-  @apply px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-lg;
-  @apply hover:from-cyan-400 hover:to-blue-500 transition-all duration-300;
-  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
-  @apply border border-cyan-400/50;
-}
-
-.btn-success {
-  @apply px-6 py-3 bg-gradient-to-r from-lime-500 to-green-600 text-black font-bold rounded-lg;
-  @apply hover:from-lime-400 hover:to-green-500 transition-all duration-300;
-  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
-}
-
-.btn-danger {
-  @apply px-6 py-3 bg-gradient-to-r from-pink-600 to-red-600 text-white font-bold rounded-lg;
-  @apply hover:from-pink-500 hover:to-red-500 transition-all duration-300;
-  @apply shadow-lg hover:shadow-xl transform hover:scale-105;
-}
-
-button:disabled {
-  @apply opacity-50 cursor-not-allowed scale-100 !important;
-}
-
-/* ==================== ANIMATIONS ==================== */
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(157, 78, 221, 0.4),
-                0 0 20px rgba(199, 125, 255, 0.2);
+/* ==================== TWITCH BUTTONS ==================== */
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-twitch-purple text-white font-semibold rounded;
+    @apply hover:bg-twitch-purple-light transition-all duration-200;
+    font-weight: 600;
+    letter-spacing: 0.5px;
   }
-  50% {
-    box-shadow: 0 0 20px rgba(157, 78, 221, 0.6),
-                0 0 40px rgba(199, 125, 255, 0.4);
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-twitch-gray text-white font-semibold rounded;
+    @apply hover:bg-twitch-gray-light transition-all duration-200;
+  }
+
+  .btn-accent {
+    @apply px-6 py-3 bg-accent-info text-twitch-black font-semibold rounded;
+    @apply hover:brightness-110 transition-all duration-200;
+  }
+
+  .btn-success {
+    @apply px-6 py-3 bg-accent-success text-twitch-black font-semibold rounded;
+    @apply hover:brightness-110 transition-all duration-200;
+  }
+
+  .btn-live {
+    @apply px-6 py-3 bg-accent-live text-white font-semibold rounded;
+    @apply hover:brightness-110 transition-all duration-200;
+  }
+
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed;
   }
 }
 
-@keyframes cyber-glow {
-  0%, 100% {
-    text-shadow: 0 0 10px var(--accent-cyan), 0 0 20px var(--primary);
-  }
-  50% {
-    text-shadow: 0 0 20px var(--accent-cyan), 0 0 40px var(--primary),
-                 0 0 60px var(--accent-pink);
-  }
+/* ==================== TWITCH ANIMATIONS ==================== */
+@keyframes twitch-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(145, 70, 255, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(145, 70, 255, 0); }
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes bounce-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.animate-glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
+.animate-twitch-glow {
+  animation: twitch-glow 2s infinite;
 }
 
-.animate-cyber-glow {
-  animation: cyber-glow 2s ease-in-out infinite;
+.animate-live {
+  animation: live-pulse 2s ease-in-out infinite;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: slide-up 0.4s ease-out;
 }
 
-.animate-bounce-in {
-  animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
 }
 
-/* ==================== TYPOGRAPHY ==================== */
+/* ==================== TWITCH TYPOGRAPHY ==================== */
 .title-xl {
-  font-family: 'Poppins', sans-serif;
-  font-size: 3.5rem;
-  font-weight: 900;
-  letter-spacing: -1px;
-  line-height: 1.1;
-  background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--primary) 50%, var(--accent-pink) 100%);
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  color: var(--twitch-text);
+}
+
+.title-lg {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--twitch-purple-light);
+}
+
+.title-md {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--twitch-text);
+}
+
+.subtitle-lg {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--twitch-text-muted);
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, var(--twitch-purple) 0%, var(--twitch-purple-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.title-lg {
-  font-family: 'Poppins', sans-serif;
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--accent-cyan);
-}
-
-.title-md {
-  font-family: 'Poppins', sans-serif;
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--text-primary);
-}
-
-.subtitle-lg {
-  font-family: 'Inter', sans-serif;
-  font-size: 1.125rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
-}
-
-/* ==================== CARDS ==================== */
+/* ==================== TWITCH CARDS ==================== */
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
+  background: var(--twitch-dark);
+  border: 1px solid var(--twitch-gray);
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
 }
 
 .card:hover {
-  background: rgba(58, 10, 102, 0.8);
-  border-color: var(--primary-light);
-  box-shadow: 0 0 30px rgba(157, 78, 221, 0.3);
-  transform: translateY(-4px);
+  border-color: var(--twitch-purple);
+  transform: translateY(-2px);
 }
 
-/* ==================== BADGES ==================== */
+/* ==================== TWITCH BADGES ==================== */
 .badge {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.badge-success {
-  background: rgba(57, 255, 20, 0.2);
-  color: var(--success);
-  border: 1px solid var(--success);
+.badge-live {
+  background: var(--accent-live);
+  color: white;
 }
 
-.badge-error {
-  background: rgba(255, 0, 110, 0.2);
-  color: var(--error);
-  border: 1px solid var(--error);
+.badge-online {
+  background: var(--status-online);
+  color: var(--twitch-black);
 }
 
-.badge-info {
-  background: rgba(0, 245, 255, 0.2);
-  color: var(--accent-cyan);
-  border: 1px solid var(--accent-cyan);
+.badge-purple {
+  background: var(--twitch-purple);
+  color: white;
 }
 
-/* ==================== TOAST NOTIFICATIONS ==================== */
+/* ==================== TWITCH TOASTS ==================== */
 .toast-notification {
   position: fixed;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  animation: slide-up 0.4s ease-out;
+  padding: 0.875rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  animation: slide-up 0.3s ease-out;
   z-index: 9999;
-  border-left: 4px solid;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .toast-success {
-  background: rgba(57, 255, 20, 0.15);
-  color: var(--success);
-  border-left-color: var(--success);
+  background: var(--twitch-dark);
+  color: var(--accent-success);
+  border: 1px solid var(--accent-success);
 }
 
 .toast-error {
-  background: rgba(255, 0, 110, 0.15);
-  color: var(--error);
-  border-left-color: var(--error);
+  background: var(--twitch-dark);
+  color: var(--accent-live);
+  border: 1px solid var(--accent-live);
 }
 
 .toast-info {
-  background: rgba(0, 245, 255, 0.15);
-  color: var(--accent-cyan);
-  border-left-color: var(--accent-cyan);
+  background: var(--twitch-dark);
+  color: var(--twitch-purple-light);
+  border: 1px solid var(--twitch-purple);
 }
 
-/* ==================== GAMING STYLES ==================== */
-.gaming-title {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 900;
-  letter-spacing: 2px;
-  color: var(--accent-cyan);
+/* ==================== TWITCH UI PATTERNS ==================== */
+.nav-header {
+  background: var(--twitch-dark);
+  border-bottom: 1px solid var(--twitch-gray);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.gaming-subtitle {
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-brand img {
+  width: 32px;
+  height: 32px;
+}
+
+.nav-brand span {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--text-primary);
+  font-size: 1.25rem;
+  color: var(--twitch-text);
 }
 
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: var(--status-online);
+}
+
+.status-dot.live {
+  background: var(--accent-live);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+.input-twitch {
+  background: var(--twitch-darker);
+  border: 1px solid var(--twitch-gray);
+  color: var(--twitch-text);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s;
+}
+
+.input-twitch:focus {
+  outline: none;
+  border-color: var(--twitch-purple);
+}
+
+.input-twitch::placeholder {
+  color: var(--twitch-text-muted);
+}
+
+/* Ficha Component Styles */
 .ficha-base {
-  transition: all 0.3s ease;
-  border-radius: 8px;
+  transition: all 0.2s ease;
+  border-radius: 6px;
 }

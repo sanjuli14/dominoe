@@ -8,41 +8,28 @@ import { Ficha } from '../../services/game.service';
   standalone: true,
   imports: [CommonModule, FichaComponent],
   template: `
-    <div
-      class="glass-panel fixed bottom-0 left-0 right-0 h-40
-             border-t-2 border-gold bg-gradient-to-t from-felt-800 via-felt-700 to-transparent
-             flex items-center justify-center px-4 py-4 gap-6
-             backdrop-blur-xl z-40"
-    >
-      <!-- Etiqueta de turno -->
-      <div
-        *ngIf="misTurno"
-        class="absolute top-3 left-6 gaming-subtitle text-gold text-base animate-pulse-glow font-bold"
-      >
-        🎯 ¡ES TU TURNO!
+    <div class="fixed bottom-0 left-0 right-0 h-36 bg-twitch-dark border-t border-twitch-gray z-40">
+      <!-- Turn indicator -->
+      <div *ngIf="misTurno" class="absolute top-2 left-4 flex items-center gap-2">
+        <span class="status-dot live"></span>
+        <span class="text-sm font-semibold text-accent-live">Tu turno</span>
       </div>
 
-      <!-- Fichas en mano -->
-      <div
-        class="flex items-center justify-center gap-8 overflow-x-auto max-w-full h-32 scrollbar-hide"
-      >
-        <!-- Ficha vacía (para pasar o esperar) -->
-        <div *ngIf="fichas.length === 0" class="text-ivory/50 text-center">
-          <p class="text-sm">No hay fichas disponibles</p>
-          <button
-            *ngIf="misTurno"
-            (click)="onPasar()"
-            class="mt-2 px-6 py-3 bg-gold/20 border-2 border-gold text-gold rounded-lg hover:bg-gold/30 transition-all gaming-subtitle font-bold text-sm"
-          >
-            PASAR
+      <!-- Fichas container -->
+      <div class="flex items-center justify-center h-full gap-4 px-4 overflow-x-auto scrollbar-hide">
+        <!-- Empty state -->
+        <div *ngIf="fichas.length === 0" class="text-center">
+          <p class="text-sm text-twitch-text-muted mb-2">Sin fichas</p>
+          <button *ngIf="misTurno" (click)="onPasar()" class="btn-secondary px-6 py-2 text-sm">
+            Pasar turno
           </button>
         </div>
 
         <!-- Fichas -->
         <div
           *ngFor="let ficha of fichas; let idx = index"
-          class="flex-shrink-0 transition-all duration-300 hover:scale-125 hover:translate-y-[-16px] cursor-pointer"
-          [class.translate-y-[-48px]]="seleccionada() === idx"
+          class="flex-shrink-0 transition-all duration-200 hover:scale-110 cursor-pointer"
+          [class.-translate-y-4]="seleccionada() === idx"
         >
           <app-ficha
             [valor_a]="ficha.valor_a"
@@ -55,39 +42,21 @@ import { Ficha } from '../../services/game.service';
           ></app-ficha>
         </div>
 
-        <!-- Botón de Pasar -->
+        <!-- Pasar button -->
         <button
           *ngIf="fichas.length > 0 && misTurno"
           (click)="onPasar()"
-          class="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-copper to-gold text-ebony font-bold rounded-lg hover:scale-110 transition-all gaming-subtitle shadow-lg text-base"
+          class="flex-shrink-0 btn-secondary px-6 py-3"
         >
-          PASAR
+          Pasar
         </button>
       </div>
 
-      <!-- Panel de control derecho -->
-      <div
-        *ngIf="seleccionada() !== -1"
-        class="absolute right-6 bottom-4 flex gap-3"
-      >
-        <button
-          (click)="onJugarIzq()"
-          class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-lg font-bold gaming-subtitle hover:scale-110 transition-all shadow-lg text-base"
-        >
-          ◄ IZQUIERDA
-        </button>
-        <button
-          (click)="onJugarDer()"
-          class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-lg font-bold gaming-subtitle hover:scale-110 transition-all shadow-lg text-base"
-        >
-          DERECHA ►
-        </button>
-        <button
-          (click)="onCancelar()"
-          class="px-4 py-3 bg-red-600/20 border-2 border-red-500 text-red-400 rounded-lg font-bold hover:bg-red-600/40 transition-all text-base"
-        >
-          ✕
-        </button>
+      <!-- Controls -->
+      <div *ngIf="seleccionada() !== -1" class="absolute right-4 bottom-4 flex gap-2">
+        <button (click)="onJugarIzq()" class="btn-primary px-4 py-2 text-sm">← Izq</button>
+        <button (click)="onJugarDer()" class="btn-primary px-4 py-2 text-sm">Der →</button>
+        <button (click)="onCancelar()" class="btn-secondary px-3 py-2 text-sm">✕</button>
       </div>
     </div>
   `,

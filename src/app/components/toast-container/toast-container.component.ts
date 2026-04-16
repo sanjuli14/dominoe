@@ -7,15 +7,10 @@ import { ToastService } from '../../services/toast.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="fixed bottom-40 right-4 space-y-2 z-50">
-      <div
-        *ngFor="let toast of toasts()"
-        
-        class="px-6 py-3 rounded-lg font-bold text-sm gaming-subtitle
-               shadow-lg animate-slideInUp
-               transition-all duration-300"
-        [ngClass]="getToastClass(toast.type)"
-      >
+    <div class="fixed bottom-44 left-4 space-y-2 z-50">
+      <div *ngFor="let toast of toasts()"
+           class="px-4 py-3 rounded-lg text-sm font-medium animate-slideInUp"
+           [ngClass]="getToastClass(toast.type)">
         {{ toast.message }}
       </div>
     </div>
@@ -47,18 +42,18 @@ export class ToastContainerComponent {
   }
 
   getToastClass(type: string): string {
-    const baseClasses = 'border';
+    const baseClasses = 'border shadow-lg';
     switch (type) {
       case 'success':
-        return `${baseClasses} border-success bg-success/20 text-success`;
+        return `${baseClasses} border-accent-success bg-twitch-dark text-accent-success`;
       case 'error':
-        return `${baseClasses} border-error bg-error/20 text-error`;
+        return `${baseClasses} border-accent-live bg-twitch-dark text-accent-live`;
       case 'info':
-        return `${baseClasses} border-ivory/30 bg-ivory/10 text-ivory`;
+        return `${baseClasses} border-twitch-purple bg-twitch-dark text-twitch-purple-light`;
       case 'cubano':
-        return 'bg-gradient-to-r from-gold to-copper text-ebony border-0 shadow-neon';
+        return `${baseClasses} border-twitch-purple bg-twitch-purple text-white`;
       default:
-        return baseClasses;
+        return `${baseClasses} border-twitch-gray bg-twitch-dark text-twitch-text`;
     }
   }
 }

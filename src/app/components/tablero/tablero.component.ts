@@ -97,106 +97,68 @@ interface FichaTablero {
     HistorialComponent,
   ],
   template: `
-    <div class="felt-table w-screen h-screen relative overflow-hidden">
-      <!-- Fondo de mesa de madera -->
-      <div
-        class="absolute inset-0"
-        style="
-          background: 
-            radial-gradient(ellipse at 30% 20%, rgba(139, 90, 43, 0.4) 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 80%, rgba(101, 67, 33, 0.4) 0%, transparent 50%),
-            linear-gradient(135deg, #2a1810 0%, #1a0f0a 50%, #0f0805 100%);
-        "
-      >
-        <!-- Patrón de fieltro sutil -->
-        <div
-          class="absolute inset-0 opacity-30"
-          style="
-            background-image: 
-              radial-gradient(circle at 25% 25%, rgba(139, 69, 19, 0.3) 1px, transparent 1px),
-              radial-gradient(circle at 75% 75%, rgba(160, 82, 45, 0.3) 1px, transparent 1px);
-            background-size: 20px 20px;
-          "
-        ></div>
-      </div>
+    <div class="w-screen h-screen bg-twitch-black flex flex-col">
+      <!-- Header -->
+      <header class="nav-header shrink-0 z-50">
+        <div class="nav-brand">
+          <img src="assets/logo.svg" alt="La Esquina" class="w-7 h-7">
+          <span class="brand-gradient text-lg">LA ESQUINA</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+          <div *ngIf="isDemoMode()" class="badge badge-purple">DEMO</div>
+          <div *ngIf="!isDemoMode()" class="flex items-center gap-2">
+            <span class="status-dot online"></span>
+            <span class="text-twitch-text-muted">Sala: {{ codigoSala() }}</span>
+          </div>
+        </div>
+      </header>
 
-      <!-- PANTALLA DE ESPERA DE JUGADORES -->
-      <div
-        *ngIf="esperandoJugadores()"
-        class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm"
-      >
+      <!-- Game Area -->
+      <div class="flex-1 relative felt-table overflow-hidden">
+
+        <!-- Waiting Screen -->
         <div
-          class="glass-panel p-12 rounded-3xl border border-gold/30 max-w-lg shadow-2xl text-center"
+          *ngIf="esperandoJugadores()"
+          class="absolute inset-0 bg-twitch-black/95 flex items-center justify-center z-40"
         >
-          <h1 class="gaming-title text-5xl text-gold mb-6">🎲 ESPERANDO...</h1>
-          <p class="text-ivory text-lg mb-8">
-            Esperando a que se unan jugadores
-          </p>
-
-          <!-- Spinner de carga -->
-          <div class="mb-10 flex justify-center">
-            <div class="animate-spin">
-              <div
-                class="w-16 h-16 border-4 border-gold/20 border-t-gold rounded-full"
-              ></div>
-            </div>
-          </div>
-
-          <!-- Jugadores conectados -->
-          <div class="bg-felt-700 p-6 rounded-xl border border-gold/20 mb-6">
-            <p class="text-gold gaming-subtitle text-sm mb-4">
-              JUGADORES CONECTADOS: {{ jugadores().length }}/4
-            </p>
-            <div class="space-y-2">
-              <div
-                *ngFor="let j of jugadores()"
-                class="p-3 bg-gold/10 rounded-lg border border-gold/30 text-ivory"
-              >
-                <p class="gaming-subtitle">{{ j.nombre }}</p>
-                <p class="text-xs text-ivory/60">
-                  Posición {{ j.posicion }} - Equipo {{ j.equipo }}
-                </p>
-              </div>
-              <div
-                *ngFor="let i of generarEspacios(4 - jugadores().length)"
-                class="p-3 bg-felt-600 rounded-lg border border-dashed border-ivory/20 text-ivory/40 text-center"
-              >
-                <p class="gaming-subtitle">Esperando jugador...</p>
+          <div class="glass-panel-purple max-w-md w-full mx-4 p-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="title-lg">Sala de Espera</h2>
+              <div class="flex items-center gap-2">
+                <span class="status-dot online"></span>
+                <span class="text-sm text-twitch-text-muted">{{ jugadores().length }}/4</span>
               </div>
             </div>
-          </div>
 
-          <!-- Código de sala -->
-          <div class="p-4 bg-gold/20 rounded-xl border border-gold/50 mb-6">
-            <p class="text-ivory/70 text-sm mb-2">Código de sala:</p>
-            <p class="gaming-title text-3xl text-gold mb-3">
-              {{ codigoSala() }}
-            </p>
+            <div class="bg-twitch-darker border border-twitch-gray rounded-lg p-4 mb-6">
+              <p class="text-xs text-twitch-text-muted uppercase mb-2">Código</p>
+              <div class="flex items-center justify-between">
+                <span class="text-3xl font-bold text-twitch-purple tracking-widest">{{ codigoSala() }}</span>
+                <button (click)="copiarCodigoSala()" class="btn-secondary px-4 py-2 text-sm">Copiar</button>
+              </div>
+            </div>
+
+            <div class="space-y-2 mb-6">
+              <div *ngFor="let j of jugadores()" class="flex items-center gap-3 p-3 bg-twitch-darker rounded-lg border border-twitch-gray">
+                <span class="status-dot online"></span>
+                <span class="font-medium">{{ j.nombre }}</span>
+                <span class="text-xs text-twitch-text-muted ml-auto">Eq {{ j.equipo }}</span>
+              </div>
+              <div *ngFor="let i of generarEspacios(4 - jugadores().length)" class="p-3 bg-twitch-dark rounded-lg border border-dashed border-twitch-gray text-twitch-text-muted text-center text-sm">
+                Esperando jugador...
+              </div>
+            </div>
+
             <button
-              (click)="copiarCodigoSala()"
-              class="w-full px-4 py-2 bg-gold/30 hover:bg-gold/40 border border-gold text-ivory rounded-lg gaming-subtitle text-sm transition-all"
+              *ngIf="jugadores().length === 4 && puedeIniciar()"
+              (click)="iniciarPartida()"
+              [disabled]="iniciandoPartida()"
+              class="w-full btn-success py-4 font-bold disabled:opacity-50"
             >
-              📋 COPIAR CÓDIGO
+              {{ iniciandoPartida() ? 'Iniciando...' : 'Iniciar Partida' }}
             </button>
           </div>
-
-          <!-- Botón para iniciar (solo si hay 4 jugadores) -->
-          <button
-            *ngIf="jugadores().length === 4 && puedeIniciar()"
-            (click)="iniciarPartida()"
-            [disabled]="iniciandoPartida()"
-            class="w-full px-6 py-4 bg-gradient-to-r from-gold to-copper text-ebony font-bold rounded-lg
-                   hover:scale-105 transition-all gaming-title text-lg disabled:opacity-50"
-          >
-            {{ iniciandoPartida() ? 'INICIANDO...' : '¡EMPEZAR PARTIDA!' }}
-          </button>
-
-          <!-- Info -->
-          <p class="text-ivory/50 text-xs mt-6">
-            Todos deben estar conectados para poder empezar
-          </p>
         </div>
-      </div>
 
       <!-- CONTENEDOR PRINCIPAL DEL TABLERO -->
       <div
@@ -375,15 +337,15 @@ interface FichaTablero {
       <!-- Historial de jugadas -->
       <app-historial [agregarJugada]="ultimaJugada()"></app-historial>
 
-      <!-- Botones de debug -->
-      <div class="fixed bottom-40 right-4 flex flex-col gap-2 z-50">
-        <button
-          *ngIf="debug()"
-          (click)="toggleGrid()"
-          class="px-4 py-2 bg-gold/20 border border-gold text-gold rounded-lg text-xs font-mono hover:bg-gold/30"
-        >
-          GRID {{ mostrarGrid() ? 'ON' : 'OFF' }}
-        </button>
+        <!-- Debug buttons -->
+        <div class="fixed bottom-32 right-4 flex flex-col gap-2 z-50" *ngIf="debug()">
+          <button
+            (click)="toggleGrid()"
+            class="px-3 py-2 bg-twitch-gray border border-twitch-purple text-twitch-purple rounded text-xs font-mono hover:bg-twitch-purple hover:text-white transition-colors"
+          >
+            GRID: {{ mostrarGrid() ? 'ON' : 'OFF' }}
+          </button>
+        </div>
       </div>
     </div>
   `,
@@ -655,6 +617,7 @@ export class TableroComponent implements OnInit {
       dir: Direction;
       valorLibre: number | null;
       isActivo: boolean;
+      esMula: boolean; // Tipo de la última ficha colocada en este extremo
     }
 
     let extremoIzq: GridExtremo = {
@@ -663,6 +626,7 @@ export class TableroComponent implements OnInit {
       dir: DIRECTIONS.W,
       valorLibre: null,
       isActivo: false,
+      esMula: false,
     };
 
     let extremoDer: GridExtremo = {
@@ -671,6 +635,7 @@ export class TableroComponent implements OnInit {
       dir: DIRECTIONS.E,
       valorLibre: null,
       isActivo: false,
+      esMula: false,
     };
 
     // Sistema de giro determinístico simple
@@ -720,39 +685,24 @@ export class TableroComponent implements OnInit {
         resultado.push(fichaCentro);
 
         // Configurar extremos según el tipo de ficha inicial
-        if (esMula) {
-          // Mula vertical: extremos a 1.5 celdas (48px) para que las horizontales queden pegadas
-          extremoIzq = {
-            col: gridCenterX - 1,
-            row: gridCenterY,
-            dir: DIRECTIONS.W,
-            valorLibre: ficha.valor_a,
-            isActivo: true,
-          };
-          extremoDer = {
-            col: gridCenterX + 1,
-            row: gridCenterY,
-            dir: DIRECTIONS.E,
-            valorLibre: ficha.valor_b,
-            isActivo: true,
-          };
-        } else {
-          // Ficha normal horizontal: extremos a 2 celdas (64px)
-          extremoIzq = {
-            col: gridCenterX - 2,
-            row: gridCenterY,
-            dir: DIRECTIONS.W,
-            valorLibre: ficha.valor_a,
-            isActivo: true,
-          };
-          extremoDer = {
-            col: gridCenterX + 2,
-            row: gridCenterY,
-            dir: DIRECTIONS.E,
-            valorLibre: ficha.valor_b,
-            isActivo: true,
-          };
-        }
+        // TODAS las fichas ocupan 64px (2 celdas) en su dimensión horizontal
+        // El extremo es donde se conecta el CENTRO de la siguiente ficha (a 2 celdas de distancia)
+        extremoIzq = {
+          col: gridCenterX - 2,
+          row: gridCenterY,
+          dir: DIRECTIONS.W,
+          valorLibre: ficha.valor_a,
+          isActivo: true,
+          esMula: esMula,
+        };
+        extremoDer = {
+          col: gridCenterX + 2,
+          row: gridCenterY,
+          dir: DIRECTIONS.E,
+          valorLibre: ficha.valor_b,
+          isActivo: true,
+          esMula: esMula,
+        };
       } else {
         // Fichas subsiguientes
         const esExtremoIzq = ficha.lado === 'izquierda';
@@ -818,7 +768,10 @@ export class TableroComponent implements OnInit {
 
         // Actualizar extremo para siguiente ficha
         const nuevoValorLibre = ficha.valor_a === extremo.valorLibre ? ficha.valor_b : ficha.valor_a;
-        const avanceCeldas = esMula ? 1 : 2;
+        
+        // Todas las fichas ocupan 64px (2 celdas) en su dimensión horizontal
+        // El centro de cada ficha está separado por 2 celdas (64px) para que queden pegadas
+        const avanceCeldas = 2;
         
         const nuevoExtremo: GridExtremo = {
           col: extremo.col + extremo.dir.x * avanceCeldas,
@@ -826,6 +779,7 @@ export class TableroComponent implements OnInit {
           dir: extremo.dir,
           valorLibre: nuevoValorLibre,
           isActivo: true,
+          esMula: esMula,
         };
 
         if (esExtremoIzq) extremoIzq = nuevoExtremo;

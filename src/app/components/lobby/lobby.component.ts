@@ -11,179 +11,125 @@ import { ToastService } from '../../services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <!-- Fondo animado con gradiente -->
-    <div
-      class="w-screen h-screen overflow-hidden relative"
-      style="background: linear-gradient(-45deg, #030011, #0d0221, #1a0033, #0d0221);
-              background-size: 400% 400%;
-              animation: gradient 15s ease infinite;"
-    >
-      <!-- Elementos decorativos de fondo -->
-      <div
-        class="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 blur-3xl rounded-full"
-      ></div>
-      <div
-        class="absolute bottom-0 right-0 w-96 h-96 bg-cyan-500/10 blur-3xl rounded-full"
-      ></div>
+    <!-- App Container -->
+    <div class="w-screen h-screen bg-twitch-black flex flex-col">
 
-      <!-- Contenedor principal -->
-      <div
-        class="relative w-full h-full flex flex-col items-center justify-center px-4"
-      >
-        <!-- Logo y título -->
-        <div class="text-center mb-12 animate-slide-up">
-          <h1 class="title-xl mb-4">🎲 LA ESQUINA 🎲</h1>
-          <p class="subtitle-lg text-gray-300">
-            <span
-              class="inline-block px-4 py-2 rounded-lg bg-purple-900/30 border border-purple-500/50"
-            >
-              DOMINÓ DOBLE 9 - MODO MULTIPLAYER
-            </span>
-          </p>
+      <!-- Header Twitch Style -->
+      <header class="nav-header shrink-0">
+        <div class="nav-brand">
+          <img src="assets/logo.svg" alt="La Esquina" class="w-8 h-8">
+          <span class="brand-gradient">LA ESQUINA</span>
+          <span class="badge badge-purple text-xs">BETA</span>
         </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 text-sm text-twitch-text-muted">
+            <span class="status-dot live"></span>
+            <span>EN VIVO</span>
+          </div>
+        </div>
+      </header>
 
-        <!-- Tarjeta principal -->
-        <div
-          class="glass-panel w-full max-w-2xl px-8 py-12 animate-bounce-in"
-          style="border: 2px solid rgba(0, 245, 255, 0.3);"
-        >
-          <!-- Información de juego -->
-          <div class="grid grid-cols-3 gap-4 mb-10">
-            <div
-              class="text-center p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30"
-            >
-              <p class="text-2xl font-bold text-cyan-400">4</p>
-              <p class="text-xs text-gray-400 mt-1">JUGADORES</p>
+      <!-- Main Content -->
+      <main class="flex-1 flex items-center justify-center p-6">
+        <div class="w-full max-w-lg animate-fade-in">
+
+          <!-- Stats Row -->
+          <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="card text-center py-4">
+              <p class="text-2xl font-bold text-twitch-purple">4</p>
+              <p class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide">Jugadores</p>
             </div>
-            <div
-              class="text-center p-4 rounded-lg bg-purple-500/10 border border-purple-500/30"
-            >
-              <p class="text-2xl font-bold text-purple-400">2</p>
-              <p class="text-xs text-gray-400 mt-1">EQUIPOS</p>
+            <div class="card text-center py-4">
+              <p class="text-2xl font-bold text-accent-success">2</p>
+              <p class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide">Equipos</p>
             </div>
-            <div
-              class="text-center p-4 rounded-lg bg-lime-500/10 border border-lime-500/30"
-            >
-              <p class="text-2xl font-bold text-lime-400">200</p>
-              <p class="text-xs text-gray-400 mt-1">PUNTOS 🏆</p>
+            <div class="card text-center py-4">
+              <p class="text-2xl font-bold text-accent-info">200</p>
+              <p class="text-xs text-twitch-text-muted mt-1 uppercase tracking-wide">Puntos</p>
             </div>
           </div>
 
-          <!-- Nombre del Jugador -->
-          <div class="mb-6">
-            <label class="block text-sm text-gray-400 mb-2 font-semibold"
-              >TÚ NOMBRE</label
-            >
-            <input
-              type="text"
-              [(ngModel)]="nombreJugador"
-              placeholder="Ej. El Master"
-              maxlength="15"
-              class="w-full px-4 py-3 bg-gray-800 text-white border border-purple-500/50 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-bold tracking-wide"
-            />
+          <!-- Main Panel -->
+          <div class="glass-panel p-6">
+            <h2 class="title-md mb-6 text-center">Dominó Doble 9</h2>
+
+            <!-- Name Input -->
+            <div class="mb-5">
+              <label class="block text-sm text-twitch-text-muted mb-2 font-medium">
+                Tu nombre de jugador
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="nombreJugador"
+                placeholder="Ej. El Master"
+                maxlength="15"
+                class="w-full input-twitch"
+              />
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+              <button
+                (click)="crearSala()"
+                class="w-full btn-primary py-4 text-base"
+              >
+                Crear Sala
+              </button>
+
+              <button
+                (click)="mostrarUnirse()"
+                class="w-full btn-secondary py-4 text-base"
+              >
+                Unirse a Sala
+              </button>
+
+              <button
+                (click)="goToDemo()"
+                class="w-full btn-accent py-4 text-base"
+              >
+                Modo Demo
+              </button>
+            </div>
           </div>
 
-          <!-- Botones principales -->
-          <div class="space-y-4">
-            <!-- Crear sala -->
-            <button
-              (click)="crearSala()"
-              class="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500
-                     text-white font-bold rounded-lg gaming-title
-                     transition-all duration-300 transform hover:scale-105 hover:shadow-xl
-                     border border-cyan-400/50 shadow-lg
-                     uppercase tracking-wider"
-            >
-              ➕ CREAR SALA
-            </button>
-
-            <!-- Unirse a sala -->
-            <button
-              (click)="mostrarUnirse()"
-              class="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500
-                     text-white font-bold rounded-lg gaming-title
-                     transition-all duration-300 transform hover:scale-105 hover:shadow-xl
-                     border border-purple-400/50 shadow-lg
-                     uppercase tracking-wider"
-            >
-              🔑 UNIRSE A SALA
-            </button>
-
-            <!-- Modo demo -->
-            <button
-              (click)="goToDemo()"
-              class="w-full py-4 px-6 bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-400 hover:to-green-500
-                     text-white font-bold rounded-lg gaming-title
-                     transition-all duration-300 transform hover:scale-105 hover:shadow-xl
-                     border border-lime-400/50 shadow-lg
-                     uppercase tracking-wider"
-            >
-              ⚡ MODO DEMO
-            </button>
-          </div>
-
-          <!-- Footer -->
-          <div class="mt-8 pt-6 border-t border-purple-500/30 text-center">
-            <p class="text-xs text-gray-500">v1.0 • Desarrollado para Twitch</p>
-            <p class="text-xs text-gray-500 mt-1">
-              🎯 Juego de Dominó Cubano Tradicional
+          <!-- Footer Info -->
+          <div class="mt-6 text-center">
+            <p class="text-xs text-twitch-text-muted">
+              Multijugador en tiempo real • Optimizado para Twitch
             </p>
           </div>
         </div>
-
-        <!-- Info abajo -->
-        <div class="mt-12 text-center max-w-2xl">
-          <div class="grid grid-cols-2 gap-4 text-sm text-gray-400">
-            <div
-              class="p-3 rounded-lg bg-purple-900/20 border border-purple-500/30"
-            >
-              <p class="font-semibold text-cyan-400">🎮 MULTIJUGADOR</p>
-              <p class="text-xs mt-1">Juega con 4 personas en tiempo real</p>
-            </div>
-            <div
-              class="p-3 rounded-lg bg-purple-900/20 border border-purple-500/30"
-            >
-              <p class="font-semibold text-lime-400">🔴 EN VIVO</p>
-              <p class="text-xs mt-1">Perfectamente optimizado para Twitch</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
 
-    <!-- Modal para unirse -->
+    <!-- Modal unirse -->
     <div
       *ngIf="mostraModal()"
-      class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm"
+      class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center backdrop-blur-sm"
       (click)="cerrarModal()"
     >
       <div
-        class="glass-panel max-w-md w-full mx-4 p-8 rounded-2xl border border-purple-500/50 shadow-2xl relative"
+        class="glass-panel max-w-md w-full mx-4 p-6"
         (click)="$event.stopPropagation()"
       >
-        <h3 class="title-lg mb-4 text-center">Unirse a Sala</h3>
+        <h3 class="title-md mb-4 text-center">Unirse a Sala</h3>
         <input
           type="text"
           [(ngModel)]="codigoSala"
-          placeholder="Ingrese el código de sala"
+          placeholder="Ingresa el código de 6 caracteres"
           maxlength="6"
-          class="w-full px-4 py-2 bg-gray-800 text-white border border-purple-500/50 rounded-lg
-                 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400
-                 mb-4 gaming-subtitle uppercase tracking-wider"
+          class="w-full input-twitch mb-4 uppercase tracking-widest text-center"
         />
-        <div class="flex gap-4">
+        <div class="flex gap-3">
           <button
             (click)="cerrarModal()"
-            class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg
-                   transition-all duration-300"
+            class="flex-1 btn-secondary py-3"
           >
             Cancelar
           </button>
           <button
             (click)="unirseASala()"
-            class="flex-1 py-2 px-4 bg-gradient-to-r from-cyan-500 to-blue-600
-                   hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-lg
-                   transition-all duration-300"
+            class="flex-1 btn-primary py-3"
           >
             Unirse
           </button>
@@ -191,93 +137,79 @@ import { ToastService } from '../../services/toast.service';
       </div>
     </div>
 
-    <!-- Modal PANTALLA DE ESPERA (LOBBY) -->
+    <!-- Modal Sala de Espera -->
     <div
       *ngIf="mostraSalaEspera()"
-      class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm"
+      class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center backdrop-blur-sm"
     >
-      <div
-        class="glass-panel p-12 rounded-3xl border border-cyan-400/30 max-w-lg shadow-2xl text-center relative w-full mx-4"
-      >
-        <h1 class="gaming-title text-4xl text-cyan-400 mb-6">SALA DE ESPERA</h1>
-        <p class="text-white text-lg mb-8">
-          Esperando a que se unan los jugadores
-        </p>
+      <div class="glass-panel-purple max-w-lg w-full mx-4 p-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="title-lg">Sala de Espera</h2>
+          <div class="flex items-center gap-2">
+            <span class="status-dot online"></span>
+            <span class="text-sm text-twitch-text-muted">{{ jugadores().length }}/4</span>
+          </div>
+        </div>
 
-        <!-- Código de sala -->
-        <div
-          class="p-4 bg-cyan-900/20 rounded-xl border border-cyan-500/50 mb-6 relative"
-        >
-          <p
-            class="text-gray-400 text-sm mb-2 uppercase font-bold tracking-widest"
-          >
-            Código de Invitar:
-          </p>
-          <div class="flex items-center justify-center gap-4">
-            <span
-              class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest"
-            >
+        <!-- Código -->
+        <div class="bg-twitch-darker border border-twitch-gray rounded-lg p-4 mb-6">
+          <p class="text-xs text-twitch-text-muted uppercase mb-2">Código de sala</p>
+          <div class="flex items-center justify-between">
+            <span class="text-4xl font-bold text-twitch-purple tracking-widest">
               {{ codigoSalaEspera() }}
             </span>
             <button
               (click)="copiarCodigoSala()"
-              class="p-2 bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/50 rounded-lg transition-all"
-              title="Copiar código"
+              class="btn-secondary px-4 py-2 text-sm"
             >
-              📋
+              Copiar
             </button>
           </div>
         </div>
 
-        <!-- Jugadores conectados -->
-        <div
-          class="bg-gray-800/50 p-6 rounded-xl border border-gray-600/50 mb-6"
-        >
-          <p
-            class="text-cyan-400 font-bold uppercase tracking-widest text-sm mb-4"
+        <!-- Jugadores -->
+        <div class="space-y-2 mb-6">
+          <p class="text-xs text-twitch-text-muted uppercase mb-3">Jugadores conectados</p>
+          <div
+            *ngFor="let j of jugadores()"
+            class="flex items-center justify-between p-3 bg-twitch-darker rounded-lg border border-twitch-gray"
           >
-            JUGADORES CONECTADOS: {{ jugadores().length }}/4
-          </p>
-          <div class="space-y-2">
-            <div
-              *ngFor="let j of jugadores()"
-              class="p-3 bg-cyan-400/10 rounded-lg border border-cyan-400/30 text-white"
-            >
-              <p class="font-bold text-lg">{{ j.nombre }}</p>
-              <p class="text-xs text-gray-400 uppercase">
-                Posición {{ j.posicion + 1 }}
-              </p>
+            <div class="flex items-center gap-3">
+              <span class="status-dot online"></span>
+              <span class="font-medium">{{ j.nombre }}</span>
             </div>
-            <div
-              *ngFor="let i of generarEspacios(4 - jugadores().length)"
-              class="p-3 bg-gray-800/80 rounded-lg border border-dashed border-gray-600 text-gray-500 text-center uppercase text-sm font-bold"
-            >
-              Esperando Jugador...
-            </div>
+            <span class="text-xs text-twitch-text-muted">Pos {{ j.posicion + 1 }}</span>
+          </div>
+          <div
+            *ngFor="let i of generarEspacios(4 - jugadores().length)"
+            class="p-3 bg-twitch-dark rounded-lg border border-dashed border-twitch-gray text-twitch-text-muted text-center text-sm"
+          >
+            Esperando...
           </div>
         </div>
 
-        <!-- Botón para iniciar (solo si hay 4 jugadores y es Host) -->
+        <!-- Iniciar -->
         <div *ngIf="jugadores().length === 4">
           <button
             *ngIf="puedeIniciar()"
             (click)="iniciarPartida()"
             [disabled]="iniciandoPartida()"
-            class="w-full px-6 py-4 bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all text-xl disabled:opacity-50 uppercase tracking-widest shadow-xl shadow-cyan-500/20 border border-cyan-300/50"
+            class="w-full btn-success py-4 text-lg font-bold disabled:opacity-50"
           >
-            {{ iniciandoPartida() ? 'Iniciando...' : '¡Empezar Partida!' }}
+            {{ iniciandoPartida() ? 'Iniciando...' : 'Iniciar Partida' }}
           </button>
           <p
             *ngIf="!puedeIniciar()"
-            class="text-cyan-400 font-bold uppercase text-sm mt-4 animate-pulse"
+            class="text-center text-twitch-purple text-sm"
           >
-            El Anfitrión debe iniciar la partida
+            Esperando al anfitrión...
           </p>
         </div>
 
         <button
           (click)="salirSala()"
-          class="mt-6 text-gray-400 hover:text-red-400 text-sm font-bold uppercase transition-colors underline"
+          class="mt-4 w-full text-twitch-text-muted hover:text-white text-sm transition-colors"
         >
           Salir de la sala
         </button>
