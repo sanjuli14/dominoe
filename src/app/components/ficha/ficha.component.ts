@@ -31,72 +31,121 @@ export interface Ficha {
       <!-- SVG Horizontal -->
       <svg *ngIf="!vertical" class="w-full h-full" viewBox="0 0 64 32" preserveAspectRatio="xMidYMid meet">
         <defs>
+          <!-- Aged ivory/cream gradient - envejecido como ficha de verdad -->
           <linearGradient id="hueso-h-{{id}}" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FFFEF5" />
-            <stop offset="50%" stop-color="#F5F5DC" />
-            <stop offset="100%" stop-color="#E8E4D0" />
+            <stop offset="0%" stop-color="#FFF8F0" />
+            <stop offset="30%" stop-color="#F5E6D3" />
+            <stop offset="70%" stop-color="#E8D4B8" />
+            <stop offset="100%" stop-color="#D4C4A8" />
           </linearGradient>
+          <!-- Aged metallic divider -->
           <linearGradient id="metallic-h-{{id}}" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#8B7355" />
-            <stop offset="30%" stop-color="#D4C5B0" />
-            <stop offset="50%" stop-color="#F5F5DC" />
-            <stop offset="70%" stop-color="#D4C5B0" />
-            <stop offset="100%" stop-color="#8B7355" />
+            <stop offset="0%" stop-color="#6B5344" />
+            <stop offset="30%" stop-color="#B8A090" />
+            <stop offset="50%" stop-color="#D4C4B0" />
+            <stop offset="70%" stop-color="#B8A090" />
+            <stop offset="100%" stop-color="#6B5344" />
           </linearGradient>
+          <!-- Subtle pip relief - matte effect -->
           <filter id="pipRelief-h-{{id}}">
-            <feDropShadow dx="0.3" dy="0.3" stdDeviation="0.3" flood-color="#000" flood-opacity="0.5"/>
+            <feDropShadow dx="0.2" dy="0.2" stdDeviation="0.2" flood-color="#000" flood-opacity="0.4"/>
+          </filter>
+          <!-- Aging texture filter -->
+          <filter id="aging-h-{{id}}">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" result="noise"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0" in="noise" result="coloredNoise"/>
+            <feComposite operator="in" in="coloredNoise" in2="SourceGraphic" result="composite"/>
+            <feBlend mode="multiply" in="composite" in2="SourceGraphic"/>
           </filter>
         </defs>
 
-        <rect x="1" y="1" width="62" height="30" rx="4" fill="rgba(0,0,0,0.3)"/>
-        <rect x="0" y="0" width="64" height="32" rx="4" [attr.fill]="'url(#hueso-h-' + id + ')'" stroke="#C4B49A" stroke-width="1"/>
-        <rect x="2" y="2" width="60" height="28" rx="2" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+        <!-- Long street-lamp shadow -->
+        <rect x="3" y="4" width="62" height="30" rx="4" fill="rgba(0,0,0,0.4)" filter="blur(2px)"/>
+        <!-- Base ficha - aged ivory -->
+        <rect x="0" y="0" width="64" height="32" rx="4" [attr.fill]="'url(#hueso-h-' + id + ')'" stroke="#8B7355" stroke-width="0.8"/>
+        <!-- Aged border -->
+        <rect x="1.5" y="1.5" width="61" height="29" rx="3" fill="none" stroke="rgba(107,83,68,0.3)" stroke-width="0.5"/>
 
+        <!-- Divider line -->
         <line x1="32" y1="2" x2="32" y2="30" [attr.stroke]="'url(#metallic-h-' + id + ')'" stroke-width="2"/>
-        <line x1="31" y1="2" x2="31" y2="30" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>
-        <line x1="33" y1="2" x2="33" y2="30" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>
+        <line x1="31" y1="2" x2="31" y2="30" stroke="rgba(60,40,30,0.3)" stroke-width="0.5"/>
+        <line x1="33" y1="2" x2="33" y2="30" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
 
+        <!-- Matte black pips - slightly irregular for realism -->
         <g transform="translate(16, 16)">
-          <circle *ngFor="let pip of getPips(valor_a)" [attr.cx]="pip.x * 1" [attr.cy]="pip.y * 1.5" r="2" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
+          <circle *ngFor="let pip of getPips(valor_a); let i = index" 
+                  [attr.cx]="pip.x * 1.1" 
+                  [attr.cy]="pip.y * 1.6" 
+                  r="2.2" 
+                  fill="#1a1a1a"
+                  [attr.opacity]="0.9 + (i % 2) * 0.05"
+                  [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
         </g>
         <g transform="translate(48, 16)">
-          <circle *ngFor="let pip of getPips(valor_b)" [attr.cx]="pip.x * 1" [attr.cy]="pip.y * 1.5" r="3" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
+          <circle *ngFor="let pip of getPips(valor_b); let i = index" 
+                  [attr.cx]="pip.x * 1.1" 
+                  [attr.cy]="pip.y * 1.6" 
+                  r="2.2" 
+                  fill="#1a1a1a"
+                  [attr.opacity]="0.9 + (i % 2) * 0.05"
+                  [attr.filter]="'url(#pipRelief-h-' + id + ')'"/>
         </g>
       </svg>
 
       <!-- SVG Vertical -->
       <svg *ngIf="vertical" class="w-full h-full" viewBox="0 0 32 64" preserveAspectRatio="xMidYMid meet">
         <defs>
+          <!-- Aged ivory gradient for vertical -->
           <linearGradient id="hueso-v-{{id}}" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FFFEF5" />
-            <stop offset="50%" stop-color="#F5F5DC" />
-            <stop offset="100%" stop-color="#E8E4D0" />
+            <stop offset="0%" stop-color="#FFF8F0" />
+            <stop offset="30%" stop-color="#F5E6D3" />
+            <stop offset="70%" stop-color="#E8D4B8" />
+            <stop offset="100%" stop-color="#D4C4A8" />
           </linearGradient>
+          <!-- Aged metallic divider horizontal -->
           <linearGradient id="metallic-v-{{id}}" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#8B7355" />
-            <stop offset="30%" stop-color="#D4C5B0" />
-            <stop offset="50%" stop-color="#F5F5DC" />
-            <stop offset="70%" stop-color="#D4C5B0" />
-            <stop offset="100%" stop-color="#8B7355" />
+            <stop offset="0%" stop-color="#6B5344" />
+            <stop offset="30%" stop-color="#B8A090" />
+            <stop offset="50%" stop-color="#D4C4B0" />
+            <stop offset="70%" stop-color="#B8A090" />
+            <stop offset="100%" stop-color="#6B5344" />
           </linearGradient>
+          <!-- Matte pip relief -->
           <filter id="pipRelief-v-{{id}}">
-            <feDropShadow dx="0.3" dy="0.3" stdDeviation="0.3" flood-color="#000" flood-opacity="0.5"/>
+            <feDropShadow dx="0.2" dy="0.2" stdDeviation="0.2" flood-color="#000" flood-opacity="0.4"/>
           </filter>
         </defs>
 
-        <rect x="1" y="1" width="30" height="62" rx="4" fill="rgba(0,0,0,0.3)"/>
-        <rect x="0" y="0" width="32" height="64" rx="4" [attr.fill]="'url(#hueso-v-' + id + ')'" stroke="#C4B49A" stroke-width="1"/>
-        <rect x="2" y="2" width="28" height="60" rx="2" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+        <!-- Long street-lamp shadow for vertical -->
+        <rect x="3" y="4" width="30" height="62" rx="4" fill="rgba(0,0,0,0.4)" filter="blur(2px)"/>
+        <!-- Base ficha - aged ivory -->
+        <rect x="0" y="0" width="32" height="64" rx="4" [attr.fill]="'url(#hueso-v-' + id + ')'" stroke="#8B7355" stroke-width="0.8"/>
+        <!-- Aged border -->
+        <rect x="1.5" y="1.5" width="29" height="61" rx="3" fill="none" stroke="rgba(107,83,68,0.3)" stroke-width="0.5"/>
 
+        <!-- Horizontal divider -->
         <line x1="2" y1="32" x2="30" y2="32" [attr.stroke]="'url(#metallic-v-' + id + ')'" stroke-width="2"/>
-        <line x1="2" y1="31" x2="30" y2="31" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>
-        <line x1="2" y1="33" x2="30" y2="33" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>
+        <line x1="2" y1="31" x2="30" y2="31" stroke="rgba(60,40,30,0.3)" stroke-width="0.5"/>
+        <line x1="2" y1="33" x2="30" y2="33" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
 
+        <!-- Matte black pips for vertical -->
         <g transform="translate(16, 14)">
-          <circle *ngFor="let pip of getPips(valor_a)" [attr.cx]="pip.x * 1.5" [attr.cy]="pip.y * 1.5" r="2" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
+          <circle *ngFor="let pip of getPips(valor_a); let i = index" 
+                  [attr.cx]="pip.x * 1.4" 
+                  [attr.cy]="pip.y * 1.4" 
+                  r="2.2" 
+                  fill="#1a1a1a"
+                  [attr.opacity]="0.9 + (i % 2) * 0.05"
+                  [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
         </g>
         <g transform="translate(16, 50)">
-          <circle *ngFor="let pip of getPips(valor_b)" [attr.cx]="pip.x * 1.5" [attr.cy]="pip.y * 1.5" r="2" fill="#1a1a1a" [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
+          <circle *ngFor="let pip of getPips(valor_b); let i = index" 
+                  [attr.cx]="pip.x * 1.4" 
+                  [attr.cy]="pip.y * 1.4" 
+                  r="2.2" 
+                  fill="#1a1a1a"
+                  [attr.opacity]="0.9 + (i % 2) * 0.05"
+                  [attr.filter]="'url(#pipRelief-v-' + id + ')'"/>
         </g>
       </svg>
 

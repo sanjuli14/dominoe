@@ -15,29 +15,64 @@ export class ToastService {
   toasts = signal<Toast[]>([]);
   toastAdded$ = new Subject<Toast>();
 
-  // Tallas Cubanas - Frases del juego
-  private tallasCubanas = [
-    '¡Suena el zapato!',
-    '¡Paso y gano!',
-    '¡Toma tu data!',
-    '¡Mira ese doble!',
-    '¡Tranque gordo!',
-    '¡Salió corriendo!',
-    '¡Que saque el muerto!',
-    '¡Eso es un plato!',
-    '¡Se acabó la función!',
-    '¡Venga ese dominó!',
-    '¡Qué ficha tan buena!',
-    '¡Dale con el trancazo!',
-    '¡Oye, eso duele!',
-    '¡Aquí se acaba el negocio!',
-    '¡Una mano grande!',
-    "¡Vira pa'lla!",
-    '¡Que quede en familia!',
-    '¡Eso es un hueso!',
-    "¡Tírate pa'lla, socio!",
-    '¡Eso es un claxazo!',
-  ];
+  // Tallas Cubanas por categoría de evento
+  private tallasPorEvento = {
+    // Al salir (jugar primera ficha)
+    salir: [
+      '¡Se rompió el celofán!',
+      '¡Voy a mí!',
+      '¡Aquí empieza la función!',
+      '¡Salió el primer hueso!',
+      '¡Rompemos el hielo!',
+    ],
+    // Al pasar turno
+    pasar: [
+      '¡Agua!',
+      '¡Me quedé a pie!',
+      '¡Paso y no paso!',
+      '¡Aquí no hay nada!',
+      '¡Me comí un cable!',
+      '¡Sin novedad!',
+    ],
+    // Al trancar (cerrar el juego)
+    trancar: [
+      '¡Se cerró el caney!',
+      '¡Aquí no pasa ni el viento!',
+      '¡Tranque cerrado!',
+      '¡Se acabó la vela!',
+      '¡Cerramos el negocio!',
+    ],
+    // Al ganar una mano
+    ganar: [
+      '¡Toma tu data!',
+      '¡Suena el zapato!',
+      '¡Eso es un plato!',
+      '¡Paso y gano!',
+      '¡Qué mano tan buena!',
+      '¡Se acabó la función!',
+    ],
+    // Al ganar el juego (capote)
+    capote: [
+      '¡Capote señores!',
+      '¡Eso es un zapatazo!',
+      '¡Ganamos la partida!',
+      '¡Se acabó el dominó!',
+    ],
+    // Al jugar una mula/doble
+    mula: [
+      '¡Mira ese doble!',
+      '¡Eso es un hueso!',
+      '¡Qué mula tan buena!',
+      '¡Saca la mulita!',
+    ],
+    // Al tomar mucho tiempo
+    tiempo: [
+      '¡Suelta el hueso, que se enfría!',
+      '¡Se acaba el siglo!',
+      '¡Pensando pa\' dónde!',
+      '¡Que no te duela la mano!',
+    ],
+  };
 
   constructor() {}
 
@@ -58,12 +93,41 @@ export class ToastService {
     }
   }
 
-  showCubano(delay: number = 500) {
-    const talla =
-      this.tallasCubanas[Math.floor(Math.random() * this.tallasCubanas.length)];
+  showCubano(tipoEvento: keyof typeof this.tallasPorEvento = 'ganar', delay: number = 500) {
+    const tallas = this.tallasPorEvento[tipoEvento];
+    const talla = tallas[Math.floor(Math.random() * tallas.length)];
     setTimeout(() => {
       this.showToast(talla, 'cubano', 4000);
     }, delay);
+  }
+
+  // Métodos específicos por evento del juego
+  showSalir(delay: number = 300) {
+    this.showCubano('salir', delay);
+  }
+
+  showPasar(delay: number = 300) {
+    this.showCubano('pasar', delay);
+  }
+
+  showTrancar(delay: number = 300) {
+    this.showCubano('trancar', delay);
+  }
+
+  showGanar(delay: number = 500) {
+    this.showCubano('ganar', delay);
+  }
+
+  showCapote(delay: number = 800) {
+    this.showCubano('capote', delay);
+  }
+
+  showMula(delay: number = 300) {
+    this.showCubano('mula', delay);
+  }
+
+  showTiempo(delay: number = 200) {
+    this.showCubano('tiempo', delay);
   }
 
   removeToast(id: string) {

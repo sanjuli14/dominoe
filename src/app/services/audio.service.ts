@@ -34,27 +34,74 @@ export class AudioService {
   // ==================== SONIDOS ====================
 
   /**
-   * Sonido al jugar una ficha (clic plástico)
+   * Sonido al jugar una ficha - ¡CLACK! fuerte como en la acera
    */
-  playFichaClack() {
+  playFichaClack(esMula: boolean = false) {
     if (this.isMuted || !this.audioContext) return;
 
     const ctx = this.audioContext;
     const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    // Sonido principal - golpe seco de hueso sobre madera
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
 
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+    // Frecuencia de impacto seco
+    osc1.frequency.setValueAtTime(600, now);
+    osc1.frequency.exponentialRampToValueAtTime(100, now + 0.08);
 
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    // Volumen más alto para el "¡clack!"
+    const volumen = esMula ? 0.6 : 0.45;
+    gain1.gain.setValueAtTime(volumen, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
 
-    osc.start(now);
-    osc.stop(now + 0.1);
+    osc1.start(now);
+    osc1.stop(now + 0.08);
+
+    // Segundo oscilador para el "resonance" de la mesa
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+
+    osc2.frequency.setValueAtTime(150, now + 0.02);
+    osc2.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+
+    gain2.gain.setValueAtTime(volumen * 0.4, now + 0.02);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+    osc2.start(now + 0.02);
+    osc2.stop(now + 0.15);
+  }
+
+  /**
+   * Sonido de victoria - ¡Toma tu data! (más fuerte)
+   */
+  playDatazo() {
+    if (this.isMuted || !this.audioContext) return;
+
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Triple golpe fuerte como cuando ganan en la esquina
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const startTime = now + i * 0.12;
+      osc.frequency.setValueAtTime(500, startTime);
+      osc.frequency.exponentialRampToValueAtTime(100, startTime + 0.1);
+
+      gain.gain.setValueAtTime(0.5, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.1);
+    }
   }
 
   /**

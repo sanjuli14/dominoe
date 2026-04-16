@@ -1,10 +1,4 @@
-import {
-  Component,
-  OnInit,
-  signal,
-  computed,
-  inject,
-} from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -53,10 +47,10 @@ const DIRECTIONS = {
 };
 
 const GRID_CONFIG = {
-  CELL_SIZE: 32,        // Tamaño de celda en px (32*2=64px = ancho exacto de ficha)
-  FICHA_WIDTH_CELLS: 2,  // Ficha normal: 2 celdas de largo
+  CELL_SIZE: 32, // Tamaño de celda en px (32*2=64px = ancho exacto de ficha)
+  FICHA_WIDTH_CELLS: 2, // Ficha normal: 2 celdas de largo
   FICHA_HEIGHT_CELLS: 1, // Ficha normal: 1 celda de ancho
-  MULA_SIZE_CELLS: 1,    // Mula: ocupa 1x1 pero se renderiza perpendicular
+  MULA_SIZE_CELLS: 1, // Mula: ocupa 1x1 pero se renderiza perpendicular
   VIEWBOX_WIDTH: 1000,
   VIEWBOX_HEIGHT: 700,
   MARGIN_X: 80,
@@ -66,7 +60,7 @@ const GRID_CONFIG = {
 // Extremo libre de la cadena de fichas
 interface Extremo {
   gridX: number;
-        gridY: number;
+  gridY: number;
   direccion: Direction;
   valorLibre: number | null;
   isActivo: boolean;
@@ -101,7 +95,7 @@ interface FichaTablero {
       <!-- Header -->
       <header class="nav-header shrink-0 z-50">
         <div class="nav-brand">
-          <img src="assets/logo.svg" alt="La Esquina" class="w-7 h-7">
+          <img src="assets/logo.svg" alt="La Esquina" class="w-7 h-7" />
           <span class="brand-gradient text-lg">LA ESQUINA</span>
         </div>
         <div class="flex items-center gap-4 text-sm">
@@ -115,7 +109,6 @@ interface FichaTablero {
 
       <!-- Game Area -->
       <div class="flex-1 relative felt-table overflow-hidden">
-
         <!-- Waiting Screen -->
         <div
           *ngIf="esperandoJugadores()"
@@ -126,25 +119,47 @@ interface FichaTablero {
               <h2 class="title-lg">Sala de Espera</h2>
               <div class="flex items-center gap-2">
                 <span class="status-dot online"></span>
-                <span class="text-sm text-twitch-text-muted">{{ jugadores().length }}/4</span>
+                <span class="text-sm text-twitch-text-muted"
+                  >{{ jugadores().length }}/4</span
+                >
               </div>
             </div>
 
-            <div class="bg-twitch-darker border border-twitch-gray rounded-lg p-4 mb-6">
-              <p class="text-xs text-twitch-text-muted uppercase mb-2">Código</p>
+            <div
+              class="bg-twitch-darker border border-twitch-gray rounded-lg p-4 mb-6"
+            >
+              <p class="text-xs text-twitch-text-muted uppercase mb-2">
+                Código
+              </p>
               <div class="flex items-center justify-between">
-                <span class="text-3xl font-bold text-twitch-purple tracking-widest">{{ codigoSala() }}</span>
-                <button (click)="copiarCodigoSala()" class="btn-secondary px-4 py-2 text-sm">Copiar</button>
+                <span
+                  class="text-3xl font-bold text-twitch-purple tracking-widest"
+                  >{{ codigoSala() }}</span
+                >
+                <button
+                  (click)="copiarCodigoSala()"
+                  class="btn-secondary px-4 py-2 text-sm"
+                >
+                  Copiar
+                </button>
               </div>
             </div>
 
             <div class="space-y-2 mb-6">
-              <div *ngFor="let j of jugadores()" class="flex items-center gap-3 p-3 bg-twitch-darker rounded-lg border border-twitch-gray">
+              <div
+                *ngFor="let j of jugadores()"
+                class="flex items-center gap-3 p-3 bg-twitch-darker rounded-lg border border-twitch-gray"
+              >
                 <span class="status-dot online"></span>
                 <span class="font-medium">{{ j.nombre }}</span>
-                <span class="text-xs text-twitch-text-muted ml-auto">Eq {{ j.equipo }}</span>
+                <span class="text-xs text-twitch-text-muted ml-auto"
+                  >Eq {{ j.equipo }}</span
+                >
               </div>
-              <div *ngFor="let i of generarEspacios(4 - jugadores().length)" class="p-3 bg-twitch-dark rounded-lg border border-dashed border-twitch-gray text-twitch-text-muted text-center text-sm">
+              <div
+                *ngFor="let i of generarEspacios(4 - jugadores().length)"
+                class="p-3 bg-twitch-dark rounded-lg border border-dashed border-twitch-gray text-twitch-text-muted text-center text-sm"
+              >
                 Esperando jugador...
               </div>
             </div>
@@ -160,185 +175,262 @@ interface FichaTablero {
           </div>
         </div>
 
-      <!-- CONTENEDOR PRINCIPAL DEL TABLERO -->
-      <div
-        class="absolute inset-4 rounded-2xl border-4 border-amber-900/50 shadow-2xl overflow-hidden"
-        style="background: rgba(40, 25, 15, 0.3);"
-      >
-        <!-- SVG TABLERO -->
-        <svg
-          class="w-full h-full"
-          viewBox="0 0 1000 700"
-          preserveAspectRatio="xMidYMid meet"
+        <!-- CONTENEDOR PRINCIPAL DEL TABLERO -->
+        <div
+          class="absolute inset-4 rounded-2xl border-4 border-amber-900/50 shadow-2xl overflow-hidden"
+          style="background: rgba(40, 25, 15, 0.3);"
         >
-          <defs>
-            <!-- Gradiente metálico para la hendidura -->
-            <linearGradient id="metallic" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#8B7355" />
-              <stop offset="30%" stop-color="#D4C5B0" />
-              <stop offset="50%" stop-color="#F5F5DC" />
-              <stop offset="70%" stop-color="#D4C5B0" />
-              <stop offset="100%" stop-color="#8B7355" />
-            </linearGradient>
+          <!-- SVG TABLERO -->
+          <svg
+            class="w-full h-full"
+            viewBox="0 0 1000 700"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <!-- Gradiente metálico para la hendidura -->
+              <linearGradient id="metallic" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#8B7355" />
+                <stop offset="30%" stop-color="#D4C5B0" />
+                <stop offset="50%" stop-color="#F5F5DC" />
+                <stop offset="70%" stop-color="#D4C5B0" />
+                <stop offset="100%" stop-color="#8B7355" />
+              </linearGradient>
 
-            <!-- Sombra de la ficha -->
-            <filter id="fichaShadow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.4"/>
-            </filter>
-
-            <!-- Relieve para los pips -->
-            <filter id="pipRelief" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0.5" dy="0.5" stdDeviation="0.5" flood-color="#000" flood-opacity="0.5"/>
-            </filter>
-
-            <!-- Gradiente de hueso/marfil para la ficha -->
-            <linearGradient id="huesoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#FFFEF5" />
-              <stop offset="50%" stop-color="#F5F5DC" />
-              <stop offset="100%" stop-color="#E8E4D0" />
-            </linearGradient>
-          </defs>
-
-          <!-- GRID DEBUG (opcional) -->
-          <g *ngIf="mostrarGrid()">
-            <line
-              *ngFor="let i of gridLinesX()"
-              [attr.x1]="i" y1="0" [attr.x2]="i" y2="700"
-              stroke="rgba(255,255,255,0.1)" stroke-width="1"
-            />
-            <line
-              *ngFor="let i of gridLinesY()"
-              x1="0" [attr.y1]="i" x2="1000" [attr.y2]="i"
-              stroke="rgba(255,255,255,0.1)" stroke-width="1"
-            />
-          </g>
-
-          <!-- FICHAS EN EL TABLERO -->
-          <g id="domino-snake">
-            <g
-              *ngFor="let f of fichasTablero(); trackBy: trackByFicha"
-              [attr.transform]="'translate(' + f.cx + ', ' + f.cy + ') rotate(' + f.rotacion + ')'"
-            >
-              <!-- Sombra proyectada -->
-              <rect
-                x="-34" y="-16" width="68" height="32" rx="5"
-                fill="none"
-                filter="url(#fichaShadow)"
-              />
-
-              <!-- Base de la ficha (hueso/marfil) -->
-              <rect
-                x="-32" y="-16" width="64" height="32" rx="5"
-                fill="url(#huesoGradient)"
-                stroke="#C4B49A"
-                stroke-width="1"
-              />
-
-              <!-- Borde interior sutil -->
-              <rect
-                x="-30" y="-14" width="60" height="28" rx="3"
-                fill="none"
-                stroke="rgba(0,0,0,0.05)"
-                stroke-width="1"
-              />
-
-              <!-- Hendidura central metálica -->
-              <line
-                x1="0" y1="-15" x2="0" y2="15"
-                stroke="url(#metallic)"
-                stroke-width="3"
-              />
-
-              <!-- Sombra sutil de la hendidura -->
-              <line
-                x1="-1" y1="-15" x2="-1" y2="15"
-                stroke="rgba(0,0,0,0.2)"
-                stroke-width="1"
-              />
-              <line
-                x1="1" y1="-15" x2="1" y2="15"
-                stroke="rgba(255,255,255,0.5)"
-                stroke-width="1"
-              />
-
-              <!-- Lado A (izquierda) -->
-              <g transform="translate(-16, 0)">
-                <circle
-                  *ngFor="let pip of getPips(f.valor_a)"
-                  [attr.cx]="pip.x"
-                  [attr.cy]="pip.y"
-                  r="3"
-                  fill="#1a1a1a"
-                  filter="url(#pipRelief)"
+              <!-- Sombra de la ficha -->
+              <filter
+                id="fichaShadow"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
+                <feDropShadow
+                  dx="2"
+                  dy="3"
+                  stdDeviation="2"
+                  flood-color="#000"
+                  flood-opacity="0.4"
                 />
-              </g>
+              </filter>
 
-              <!-- Lado B (derecha) -->
-              <g transform="translate(16, 0)">
-                <circle
-                  *ngFor="let pip of getPips(f.valor_b)"
-                  [attr.cx]="pip.x"
-                  [attr.cy]="pip.y"
-                  r="3"
-                  fill="#1a1a1a"
-                  filter="url(#pipRelief)"
+              <!-- Relieve para los pips -->
+              <filter
+                id="pipRelief"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
+                <feDropShadow
+                  dx="0.5"
+                  dy="0.5"
+                  stdDeviation="0.5"
+                  flood-color="#000"
+                  flood-opacity="0.5"
                 />
+              </filter>
+
+              <!-- Gradiente de hueso/marfil para la ficha -->
+              <linearGradient
+                id="huesoGradient"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
+                <stop offset="0%" stop-color="#FFFEF5" />
+                <stop offset="50%" stop-color="#F5F5DC" />
+                <stop offset="100%" stop-color="#E8E4D0" />
+              </linearGradient>
+            </defs>
+
+            <!-- GRID DEBUG (opcional) -->
+            <g *ngIf="mostrarGrid()">
+              <line
+                *ngFor="let i of gridLinesX()"
+                [attr.x1]="i"
+                y1="0"
+                [attr.x2]="i"
+                y2="700"
+                stroke="rgba(255,255,255,0.1)"
+                stroke-width="1"
+              />
+              <line
+                *ngFor="let i of gridLinesY()"
+                x1="0"
+                [attr.y1]="i"
+                x2="1000"
+                [attr.y2]="i"
+                stroke="rgba(255,255,255,0.1)"
+                stroke-width="1"
+              />
+            </g>
+
+            <!-- FICHAS EN EL TABLERO -->
+            <g id="domino-snake">
+              <g
+                *ngFor="let f of fichasTablero(); trackBy: trackByFicha"
+                [attr.transform]="
+                  'translate(' +
+                  f.cx +
+                  ', ' +
+                  f.cy +
+                  ') rotate(' +
+                  f.rotacion +
+                  ')'
+                "
+              >
+                <!-- Sombra proyectada -->
+                <rect
+                  x="-34"
+                  y="-16"
+                  width="68"
+                  height="32"
+                  rx="5"
+                  fill="none"
+                  filter="url(#fichaShadow)"
+                />
+
+                <!-- Base de la ficha (hueso/marfil) -->
+                <rect
+                  x="-32"
+                  y="-16"
+                  width="64"
+                  height="32"
+                  rx="5"
+                  fill="url(#huesoGradient)"
+                  stroke="#C4B49A"
+                  stroke-width="1"
+                />
+
+                <!-- Borde interior sutil -->
+                <rect
+                  x="-30"
+                  y="-14"
+                  width="60"
+                  height="28"
+                  rx="3"
+                  fill="none"
+                  stroke="rgba(0,0,0,0.05)"
+                  stroke-width="1"
+                />
+
+                <!-- Hendidura central metálica -->
+                <line
+                  x1="0"
+                  y1="-15"
+                  x2="0"
+                  y2="15"
+                  stroke="url(#metallic)"
+                  stroke-width="3"
+                />
+
+                <!-- Sombra sutil de la hendidura -->
+                <line
+                  x1="-1"
+                  y1="-15"
+                  x2="-1"
+                  y2="15"
+                  stroke="rgba(0,0,0,0.2)"
+                  stroke-width="1"
+                />
+                <line
+                  x1="1"
+                  y1="-15"
+                  x2="1"
+                  y2="15"
+                  stroke="rgba(255,255,255,0.5)"
+                  stroke-width="1"
+                />
+
+                <!-- Lado A (izquierda) -->
+                <g transform="translate(-16, 0)">
+                  <circle
+                    *ngFor="let pip of getPips(f.valor_a)"
+                    [attr.cx]="pip.x"
+                    [attr.cy]="pip.y"
+                    r="3"
+                    fill="#1a1a1a"
+                    filter="url(#pipRelief)"
+                  />
+                </g>
+
+                <!-- Lado B (derecha) -->
+                <g transform="translate(16, 0)">
+                  <circle
+                    *ngFor="let pip of getPips(f.valor_b)"
+                    [attr.cx]="pip.x"
+                    [attr.cy]="pip.y"
+                    r="3"
+                    fill="#1a1a1a"
+                    filter="url(#pipRelief)"
+                  />
+                </g>
               </g>
             </g>
-          </g>
 
-          <!-- DEBUG: Mostrar posición de extremos -->
-          <g *ngIf="debug()">
-            <text x="10" y="20" fill="#0f0" font-size="12" font-family="monospace">
-              Fichas: {{ fichasTablero().length }} | Izq: {{ extremosDebug()?.izq }} | Der: {{ extremosDebug()?.der }}
-            </text>
-          </g>
-        </svg>
+            <!-- DEBUG: Mostrar posición de extremos -->
+            <g *ngIf="debug()">
+              <text
+                x="10"
+                y="20"
+                fill="#0f0"
+                font-size="12"
+                font-family="monospace"
+              >
+                Fichas: {{ fichasTablero().length }} | Izq:
+                {{ extremosDebug()?.izq }} | Der: {{ extremosDebug()?.der }}
+              </text>
+            </g>
+          </svg>
 
-        <!-- Extremos actuales (HUD) -->
-        <div
-          class="absolute top-4 left-1/2 -translate-x-1/2 flex gap-8 z-10 opacity-70"
-        >
+          <!-- Extremos actuales (HUD) -->
           <div
-            *ngIf="extremosActuales().izq !== null"
-            class="bg-black/60 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/30 backdrop-blur-sm"
+            class="absolute top-4 left-1/2 -translate-x-1/2 flex gap-8 z-10 opacity-70"
           >
-            <span class="text-gold">IZQ:</span> {{ extremosActuales().izq }}
-          </div>
-          <div
-            *ngIf="extremosActuales().der !== null"
-            class="bg-black/60 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/30 backdrop-blur-sm"
-          >
-            <span class="text-gold">DER:</span> {{ extremosActuales().der }}
+            <div
+              *ngIf="extremosActuales().izq !== null"
+              class="bg-black/60 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/30 backdrop-blur-sm"
+            >
+              <span class="text-gold">IZQ:</span> {{ extremosActuales().izq }}
+            </div>
+            <div
+              *ngIf="extremosActuales().der !== null"
+              class="bg-black/60 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/30 backdrop-blur-sm"
+            >
+              <span class="text-gold">DER:</span> {{ extremosActuales().der }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Marcador flotante -->
-      <app-marcador
-        [puntuacion]="puntuacion()"
-        [manoActual]="manoActual()"
-        [jugadores]="jugadores()"
-        [turnoActualPosicion]="turnoActualPosicion()"
-        [miEquipo]="miEquipo()"
-      ></app-marcador>
+        <!-- Marcador flotante -->
+        <app-marcador
+          [puntuacion]="puntuacion()"
+          [manoActual]="manoActual()"
+          [jugadores]="jugadores()"
+          [turnoActualPosicion]="turnoActualPosicion()"
+          [miEquipo]="miEquipo()"
+        ></app-marcador>
 
-      <!-- Mano del jugador -->
-      <app-mano
-        [fichas]="misFichas()"
-        [misTurno]="esmiTurno()"
-        (fichaSeleccionada)="onFichaSeleccionada($event)"
-        (pasarTurno)="onPasarTurno()"
-      ></app-mano>
+        <!-- Mano del jugador -->
+        <app-mano
+          [fichas]="misFichas()"
+          [misTurno]="esmiTurno()"
+          (fichaSeleccionada)="onFichaSeleccionada($event)"
+          (pasarTurno)="onPasarTurno()"
+        ></app-mano>
 
-      <!-- Toast container -->
-      <app-toast-container></app-toast-container>
+        <!-- Toast container -->
+        <app-toast-container></app-toast-container>
 
-      <!-- Historial de jugadas -->
-      <app-historial [agregarJugada]="ultimaJugada()"></app-historial>
+        <!-- Historial de jugadas -->
+        <!-- <app-historial [agregarJugada]="ultimaJugada()"></app-historial> -->
 
         <!-- Debug buttons -->
-        <div class="fixed bottom-32 right-4 flex flex-col gap-2 z-50" *ngIf="debug()">
+        <div
+          class="fixed bottom-32 right-4 flex flex-col gap-2 z-50"
+          *ngIf="debug()"
+        >
           <button
             (click)="toggleGrid()"
             class="px-3 py-2 bg-twitch-gray border border-twitch-purple text-twitch-purple rounded text-xs font-mono hover:bg-twitch-purple hover:text-white transition-colors"
@@ -353,7 +445,7 @@ interface FichaTablero {
 export class TableroComponent implements OnInit {
   private realGameService = inject(GameService);
   private gameService = signal<GameService | null>(null);
-  
+
   // Señales de estado
   debug = signal(false);
   mostrarGrid = signal(false);
@@ -405,7 +497,10 @@ export class TableroComponent implements OnInit {
     if (fichas.length === 0) return null;
     return {
       izq: fichas[0]?.valor_a + '-' + fichas[0]?.valor_b,
-      der: fichas[fichas.length - 1]?.valor_a + '-' + fichas[fichas.length - 1]?.valor_b,
+      der:
+        fichas[fichas.length - 1]?.valor_a +
+        '-' +
+        fichas[fichas.length - 1]?.valor_b,
     };
   });
 
@@ -463,16 +558,18 @@ export class TableroComponent implements OnInit {
   // ============================================
   fichasTablero = computed((): FichaTablero[] => {
     const rawFichas = this.fichasEnMesa();
-    
+
     if (!rawFichas || rawFichas.length === 0) {
       return [];
     }
 
     // Normalizar fichas de ambos servicios al formato interno
     const fichasNormalizadas = this.normalizarFichas(rawFichas);
-    
+
     // Ordenar por orden de jugada
-    const fichasOrdenadas = fichasNormalizadas.sort((a, b) => a.orden - b.orden);
+    const fichasOrdenadas = fichasNormalizadas.sort(
+      (a, b) => a.orden - b.orden,
+    );
 
     // Calcular posiciones en el grid
     return this.calcularPosicionesSnake(fichasOrdenadas);
@@ -525,7 +622,11 @@ export class TableroComponent implements OnInit {
             timestamp: Date.now(),
             tipo: 'mano-limpia',
           });
-          this.toast.showToast(`${ganador} ganó +${puntos} puntos`, 'success', 3000);
+          this.toast.showToast(
+            `${ganador} ganó +${puntos} puntos`,
+            'success',
+            3000,
+          );
           this.audio.playManoLimpia();
         });
       } else if (gameId) {
@@ -592,20 +693,20 @@ export class TableroComponent implements OnInit {
   // ============================================
   // Usamos coordenadas de grid (enteros) para alineación perfecta
   // Celda = 32px. Ficha normal = 2 celdas (64px). Mula = 1 celda ancho (32px).
-  
+
   private calcularPosicionesSnake(fichas: FichaTablero[]): FichaTablero[] {
     if (fichas.length === 0) return [];
 
     const { CELL_SIZE, VIEWBOX_WIDTH, VIEWBOX_HEIGHT } = GRID_CONFIG;
-    
+
     // Centro en coordenadas de grid (cada celda = 32px)
-    const gridCenterX = Math.floor((VIEWBOX_WIDTH / 2) / CELL_SIZE);
-    const gridCenterY = Math.floor((VIEWBOX_HEIGHT / 2) / CELL_SIZE);
+    const gridCenterX = Math.floor(VIEWBOX_WIDTH / 2 / CELL_SIZE);
+    const gridCenterY = Math.floor(VIEWBOX_HEIGHT / 2 / CELL_SIZE);
 
     // Límites del grid (en celdas, dejando margen)
-    const MIN_COL = 3;  // 3 celdas de margen izquierdo
+    const MIN_COL = 3; // 3 celdas de margen izquierdo
     const MAX_COL = Math.floor(VIEWBOX_WIDTH / CELL_SIZE) - 3;
-    const MIN_ROW = 3;  // 3 celdas de margen superior
+    const MIN_ROW = 3; // 3 celdas de margen superior
     const MAX_ROW = Math.floor(VIEWBOX_HEIGHT / CELL_SIZE) - 3;
 
     const resultado: FichaTablero[] = [];
@@ -643,22 +744,32 @@ export class TableroComponent implements OnInit {
     const girarIzquierda = (dir: Direction): Direction => {
       // Secuencia: W -> N -> E -> S -> W (sentido horario desde perspectiva del centro)
       switch (dir.name) {
-        case 'W': return DIRECTIONS.N;
-        case 'N': return DIRECTIONS.E;
-        case 'E': return DIRECTIONS.S;
-        case 'S': return DIRECTIONS.W;
-        default: return dir;
+        case 'W':
+          return DIRECTIONS.N;
+        case 'N':
+          return DIRECTIONS.E;
+        case 'E':
+          return DIRECTIONS.S;
+        case 'S':
+          return DIRECTIONS.W;
+        default:
+          return dir;
       }
     };
-    
+
     const girarDerecha = (dir: Direction): Direction => {
       // Secuencia: E -> S -> W -> N -> E (sentido anti-horario desde perspectiva del centro)
       switch (dir.name) {
-        case 'E': return DIRECTIONS.S;
-        case 'S': return DIRECTIONS.W;
-        case 'W': return DIRECTIONS.N;
-        case 'N': return DIRECTIONS.E;
-        default: return dir;
+        case 'E':
+          return DIRECTIONS.S;
+        case 'S':
+          return DIRECTIONS.W;
+        case 'W':
+          return DIRECTIONS.N;
+        case 'N':
+          return DIRECTIONS.E;
+        default:
+          return dir;
       }
     };
 
@@ -667,8 +778,13 @@ export class TableroComponent implements OnInit {
       const avanceCeldas = esMula ? 1 : 2;
       const testCol = extremo.col + extremo.dir.x * avanceCeldas;
       const testRow = extremo.row + extremo.dir.y * avanceCeldas;
-      
-      return testCol < MIN_COL || testCol > MAX_COL || testRow < MIN_ROW || testRow > MAX_ROW;
+
+      return (
+        testCol < MIN_COL ||
+        testCol > MAX_COL ||
+        testRow < MIN_ROW ||
+        testRow > MAX_ROW
+      );
     };
 
     fichas.forEach((ficha, index) => {
@@ -713,37 +829,47 @@ export class TableroComponent implements OnInit {
         // Verificar si necesitamos girar
         if (necesitaGirar(extremo, esMula)) {
           // Girar según el extremo (izquierdo gira en sentido horario, derecho anti-horario)
-          const nuevaDir = esExtremoIzq ? girarIzquierda(extremo.dir) : girarDerecha(extremo.dir);
+          const nuevaDir = esExtremoIzq
+            ? girarIzquierda(extremo.dir)
+            : girarDerecha(extremo.dir);
           const dirAnterior = extremo.dir;
           extremo.dir = nuevaDir;
-          
+
           // Para que la ficha quede pegada al girar, debemos ajustar la posición del extremo
           // El centro de la nueva ficha debe estar alineado con el borde de la última ficha colocada
           // Una ficha normal mide 64px (2 celdas), una mula 32px (1 celda)
-          
+
           // Ajuste fino para el giro: retroceder 1 celda en la dirección anterior
           // para que la nueva ficha quede pegada a la anterior
           if (dirAnterior.name === 'E') {
             // Íbamos a la derecha, ahora giramos (N o S)
             // Retroceder a la columna anterior para que quede pegada
             extremo.col = extremo.col - 1;
-            if (nuevaDir.name === 'S') extremo.row = Math.min(extremo.row + 2, MAX_ROW);
-            if (nuevaDir.name === 'N') extremo.row = Math.max(extremo.row - 2, MIN_ROW);
+            if (nuevaDir.name === 'S')
+              extremo.row = Math.min(extremo.row + 2, MAX_ROW);
+            if (nuevaDir.name === 'N')
+              extremo.row = Math.max(extremo.row - 2, MIN_ROW);
           } else if (dirAnterior.name === 'W') {
             // Íbamos a la izquierda, ahora giramos (N o S)
             extremo.col = extremo.col + 1;
-            if (nuevaDir.name === 'S') extremo.row = Math.min(extremo.row + 2, MAX_ROW);
-            if (nuevaDir.name === 'N') extremo.row = Math.max(extremo.row - 2, MIN_ROW);
+            if (nuevaDir.name === 'S')
+              extremo.row = Math.min(extremo.row + 2, MAX_ROW);
+            if (nuevaDir.name === 'N')
+              extremo.row = Math.max(extremo.row - 2, MIN_ROW);
           } else if (dirAnterior.name === 'N') {
             // Íbamos arriba, ahora giramos (E o W)
             extremo.row = extremo.row + 1;
-            if (nuevaDir.name === 'E') extremo.col = Math.min(extremo.col + 2, MAX_COL);
-            if (nuevaDir.name === 'W') extremo.col = Math.max(extremo.col - 2, MIN_COL);
+            if (nuevaDir.name === 'E')
+              extremo.col = Math.min(extremo.col + 2, MAX_COL);
+            if (nuevaDir.name === 'W')
+              extremo.col = Math.max(extremo.col - 2, MIN_COL);
           } else if (dirAnterior.name === 'S') {
             // Íbamos abajo, ahora giramos (E o W)
             extremo.row = extremo.row - 1;
-            if (nuevaDir.name === 'E') extremo.col = Math.min(extremo.col + 2, MAX_COL);
-            if (nuevaDir.name === 'W') extremo.col = Math.max(extremo.col - 2, MIN_COL);
+            if (nuevaDir.name === 'E')
+              extremo.col = Math.min(extremo.col + 2, MAX_COL);
+            if (nuevaDir.name === 'W')
+              extremo.col = Math.max(extremo.col - 2, MIN_COL);
           }
         }
 
@@ -751,10 +877,13 @@ export class TableroComponent implements OnInit {
         let rotacion: number;
         if (esMula) {
           // Mulas perpendiculares a la dirección
-          rotacion = (extremo.dir.name === 'E' || extremo.dir.name === 'W') ? 90 : 0;
+          rotacion =
+            extremo.dir.name === 'E' || extremo.dir.name === 'W' ? 90 : 0;
         } else {
           const embonaA = ficha.valor_a === extremo.valorLibre;
-          rotacion = embonaA ? extremo.dir.angle : (extremo.dir.angle + 180) % 360;
+          rotacion = embonaA
+            ? extremo.dir.angle
+            : (extremo.dir.angle + 180) % 360;
         }
 
         // Posicionar ficha (convertir grid a píxeles)
@@ -767,12 +896,13 @@ export class TableroComponent implements OnInit {
         resultado.push(fichaPosicionada);
 
         // Actualizar extremo para siguiente ficha
-        const nuevoValorLibre = ficha.valor_a === extremo.valorLibre ? ficha.valor_b : ficha.valor_a;
-        
+        const nuevoValorLibre =
+          ficha.valor_a === extremo.valorLibre ? ficha.valor_b : ficha.valor_a;
+
         // Todas las fichas ocupan 64px (2 celdas) en su dimensión horizontal
         // El centro de cada ficha está separado por 2 celdas (64px) para que queden pegadas
         const avanceCeldas = 2;
-        
+
         const nuevoExtremo: GridExtremo = {
           col: extremo.col + extremo.dir.x * avanceCeldas,
           row: extremo.row + extremo.dir.y * avanceCeldas,
@@ -795,19 +925,71 @@ export class TableroComponent implements OnInit {
   // ============================================
   getPips(valor: number): { x: number; y: number }[] {
     const d = 8; // Distancia desde centro
-    
+
     // Posiciones relativas al centro de cada mitad de ficha
     const positions: { [key: number]: { x: number; y: number }[] } = {
       0: [],
       1: [{ x: 0, y: 0 }],
-      2: [{ x: -d, y: -d }, { x: d, y: d }],
-      3: [{ x: -d, y: -d }, { x: 0, y: 0 }, { x: d, y: d }],
-      4: [{ x: -d, y: -d }, { x: d, y: -d }, { x: -d, y: d }, { x: d, y: d }],
-      5: [{ x: -d, y: -d }, { x: d, y: -d }, { x: 0, y: 0 }, { x: -d, y: d }, { x: d, y: d }],
-      6: [{ x: -d, y: -d }, { x: -d, y: 0 }, { x: -d, y: d }, { x: d, y: -d }, { x: d, y: 0 }, { x: d, y: d }],
-      7: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: 0, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
-      8: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: -d, y: 0 }, { x: d, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
-      9: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: -d, y: 0 }, { x: 0, y: 0 }, { x: d, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+      2: [
+        { x: -d, y: -d },
+        { x: d, y: d },
+      ],
+      3: [
+        { x: -d, y: -d },
+        { x: 0, y: 0 },
+        { x: d, y: d },
+      ],
+      4: [
+        { x: -d, y: -d },
+        { x: d, y: -d },
+        { x: -d, y: d },
+        { x: d, y: d },
+      ],
+      5: [
+        { x: -d, y: -d },
+        { x: d, y: -d },
+        { x: 0, y: 0 },
+        { x: -d, y: d },
+        { x: d, y: d },
+      ],
+      6: [
+        { x: -d, y: -d },
+        { x: -d, y: 0 },
+        { x: -d, y: d },
+        { x: d, y: -d },
+        { x: d, y: 0 },
+        { x: d, y: d },
+      ],
+      7: [
+        { x: -d, y: -d },
+        { x: 0, y: -d },
+        { x: d, y: -d },
+        { x: 0, y: 0 },
+        { x: -d, y: d },
+        { x: 0, y: d },
+        { x: d, y: d },
+      ],
+      8: [
+        { x: -d, y: -d },
+        { x: 0, y: -d },
+        { x: d, y: -d },
+        { x: -d, y: 0 },
+        { x: d, y: 0 },
+        { x: -d, y: d },
+        { x: 0, y: d },
+        { x: d, y: d },
+      ],
+      9: [
+        { x: -d, y: -d },
+        { x: 0, y: -d },
+        { x: d, y: -d },
+        { x: -d, y: 0 },
+        { x: 0, y: 0 },
+        { x: d, y: 0 },
+        { x: -d, y: d },
+        { x: 0, y: d },
+        { x: d, y: d },
+      ],
     };
 
     return positions[valor] || [];
@@ -822,10 +1004,20 @@ export class TableroComponent implements OnInit {
   // ============================================
   onFichaSeleccionada(event: { ficha: Ficha; lado: 'izquierda' | 'derecha' }) {
     const game = this.gameService();
+    const esMula = event.ficha.valor_a === event.ficha.valor_b;
+    const esPrimeraFicha = this.fichasEnMesa().length === 0;
+
+    // Sonido de clack al jugar ficha (más fuerte si es mula)
+    this.audio.playFichaClack(esMula);
 
     if (game) {
       game.jugarFicha(event.ficha, event.lado);
-      this.toast.showCubano();
+      // Mostrar talla según el tipo de jugada
+      if (esPrimeraFicha) {
+        this.toast.showSalir();
+      } else if (esMula) {
+        this.toast.showMula();
+      }
     } else {
       this.demoService.jugarFicha(event.ficha as any, event.lado);
       this.ultimaJugada.set({
@@ -836,11 +1028,20 @@ export class TableroComponent implements OnInit {
         timestamp: Date.now(),
         tipo: 'jugada',
       });
+      // Mostrar talla según el tipo de jugada
+      if (esPrimeraFicha) {
+        this.toast.showSalir();
+      } else if (esMula) {
+        this.toast.showMula();
+      }
     }
   }
 
   onPasarTurno() {
     const game = this.gameService();
+
+    // Sonido de pasar (más suave)
+    this.audio.playTurno();
 
     if (game) {
       game.pasarTurno();
@@ -854,7 +1055,8 @@ export class TableroComponent implements OnInit {
         tipo: 'paso',
       });
     }
-    this.toast.showCubano();
+    // Mostrar talla cubana de pasar
+    this.toast.showPasar();
   }
 
   toggleGrid() {
