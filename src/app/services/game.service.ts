@@ -104,6 +104,7 @@ export class GameService {
 
   // Observables para eventos
   toastMessage$ = new Subject<string>();
+  tallaMessage$ = new Subject<string>();
   errorMessage$ = new Subject<string>();
 
   constructor() {
@@ -472,6 +473,15 @@ export class GameService {
         }
       },
     );
+
+    // Escuchar tallas
+    channel.on('broadcast', { event: 'talla' }, (payload: any) => {
+      this.ngZone.run(() => {
+        if (payload.payload && payload.payload.mensaje) {
+          this.tallaMessage$.next(payload.payload.mensaje);
+        }
+      });
+    });
 
     channel.subscribe((status) => {
       console.log('Realtime channel status:', status);
@@ -891,5 +901,25 @@ export class GameService {
   obtenerNombrePosicion(posicion: number): string {
     const posiciones = ['NORTE', 'ESTE', 'SUR', 'OESTE'];
     return posiciones[posicion] || 'UNKNOWN';
+  }
+
+  // ==================== TALLAS (CHAT RAPIDO) ====================
+  async enviarTalla(mensaje: string) {
+    const p = this.partida();
+    const j = this.miJugador();
+    if (!p || !j) return;
+
+    const canal = this.supabase
+      .getChannels()
+      .find((c) => c.topic === `realtime:game:${p.id}`);
+    if (canal) {
+      await canal.send({
+        type: 'broadcast',
+        event: 'talla',
+        payload: { mensaje: `Dice ${j.nombre}: ${mensaje}` },
+      });
+      // Mostrarse a sí mismo también
+      this.tallaMessage$.next(`Dice ${j.nombre}: ${mensaje}`);
+    }
   }
 }

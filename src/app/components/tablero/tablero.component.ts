@@ -426,6 +426,48 @@ interface FichaTablero {
         <!-- Historial de jugadas -->
         <!-- <app-historial [agregarJugada]="ultimaJugada()"></app-historial> -->
 
+        <!-- Tallas / Chat Básico -->
+        <div class="fixed bottom-44 left-4 z-50 flex flex-col gap-2">
+          <button
+            *ngIf="!tallasMenuAhi()"
+            (click)="abrirMenuTallas()"
+            [disabled]="tallaCooldown() > 0"
+            class="w-14 h-14 rounded-full bg-twitch-darker border border-twitch-purple text-twitch-purple hover:bg-twitch-purple hover:text-white transition-colors flex items-center justify-center shadow-[0_0_15px_rgba(145,70,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span
+              *ngIf="tallaCooldown() > 0"
+              class="text-sm font-bold text-white"
+              >{{ tallaCooldown() }}s</span
+            >
+            <span *ngIf="tallaCooldown() === 0" class="text-2xl pt-1">💬</span>
+          </button>
+
+          <div
+            *ngIf="tallasMenuAhi()"
+            class="bg-twitch-darker border-2 border-twitch-purple/50 rounded-xl p-3 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex flex-col gap-2 w-[280px]"
+          >
+            <div class="flex justify-between items-center mb-1 px-1">
+              <span
+                class="text-sm font-extrabold text-twitch-purple-light uppercase"
+                >Hablarle a la mesa</span
+              >
+              <button
+                (click)="tallasMenuAhi.set(false)"
+                class="text-twitch-text flex items-center justify-center w-6 h-6 hover:text-accent-live bg-black/40 rounded-full"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              *ngFor="let t of tallasOpciones()"
+              (click)="enviarTallaPropia(t)"
+              class="text-left text-sm px-3 py-2 rounded-lg bg-twitch-black hover:bg-twitch-purple text-white transition-all transform hover:scale-105"
+            >
+              {{ t }}
+            </button>
+          </div>
+        </div>
+
         <!-- Debug buttons -->
         <div
           class="fixed bottom-32 right-4 flex flex-col gap-2 z-50"
@@ -452,6 +494,9 @@ export class TableroComponent implements OnInit {
   isDemoMode = signal(false);
   ultimaJugada = signal<JugadaHistorico | null>(null);
   iniciandoPartida = signal(false);
+  tallasMenuAhi = signal(false);
+  tallaCooldown = signal(0);
+  tallasOpciones = signal<string[]>([]);
 
   // ============================================
   // PROPIEDADES REACTIVAS UNIFICADAS
@@ -638,6 +683,11 @@ export class TableroComponent implements OnInit {
         game.toastMessage$.subscribe((msg) => {
           this.toast.showToast(msg, 'success', 3000);
           this.audio.playFichaClack();
+        });
+
+        game.tallaMessage$.subscribe((msg) => {
+          this.toast.showEspontaneo(msg);
+          this.empezarCooldown(60);
         });
 
         game.errorMessage$.subscribe((msg) => {
@@ -1012,11 +1062,11 @@ export class TableroComponent implements OnInit {
 
     if (game) {
       game.jugarFicha(event.ficha, event.lado);
-      // Mostrar talla según el tipo de jugada
+      // Solo jugar
       if (esPrimeraFicha) {
-        this.toast.showSalir();
+        // Primera ficha
       } else if (esMula) {
-        this.toast.showMula();
+        // Es mula
       }
     } else {
       this.demoService.jugarFicha(event.ficha as any, event.lado);
@@ -1028,11 +1078,11 @@ export class TableroComponent implements OnInit {
         timestamp: Date.now(),
         tipo: 'jugada',
       });
-      // Mostrar talla según el tipo de jugada
+      // Solo jugar en la demo
       if (esPrimeraFicha) {
-        this.toast.showSalir();
+        // Primera ficha demo
       } else if (esMula) {
-        this.toast.showMula();
+        // Es mula demo
       }
     }
   }
@@ -1056,7 +1106,36 @@ export class TableroComponent implements OnInit {
       });
     }
     // Mostrar talla cubana de pasar
-    this.toast.showPasar();
+    // this.toast.showPasar();
+  }
+
+  tontoInterval: any;
+
+  empezarCooldown(segundos: number) {
+    if (this.tontoInterval) clearInterval(this.tontoInterval);
+    this.tallaCooldown.set(segundos);
+    this.tontoInterval = setInterval(() => {
+      this.tallaCooldown.update((c) => Math.max(0, c - 1));
+      if (this.tallaCooldown() === 0) clearInterval(this.tontoInterval);
+    }, 1000);
+  }
+
+  abrirMenuTallas() {
+    this.tallasOpciones.set(this.toast.getAleatorias());
+    this.tallasMenuAhi.set(!this.tallasMenuAhi());
+  }
+
+  enviarTallaPropia(talla: string) {
+    if (this.tallaCooldown() > 0) return;
+    this.tallasMenuAhi.set(false);
+
+    const game = this.gameService();
+    if (game) {
+      game.enviarTalla(talla);
+    } else {
+      this.toast.showEspontaneo(`Dice 🎬 STREAMER: ${talla}`);
+      this.empezarCooldown(60);
+    }
   }
 
   toggleGrid() {

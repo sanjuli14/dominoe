@@ -86,44 +86,13 @@ export class ToastService {
     }
   }
 
-  showCubano(
-    tipoEvento: keyof typeof this.tallasPorEvento = 'ganar',
-    delay: number = 500,
-  ) {
-    const tallas = this.tallasPorEvento[tipoEvento];
-    const talla = tallas[Math.floor(Math.random() * tallas.length)];
-    setTimeout(() => {
-      this.showToast(talla, 'cubano', 4000);
-    }, delay);
+  showEspontaneo(mensaje: string) {
+    this.showToast(mensaje, "cubano", 4000);
   }
 
-  // Métodos específicos por evento del juego
-  showSalir(delay: number = 300) {
-    this.showCubano('salir', delay);
-  }
-
-  showPasar(delay: number = 300) {
-    this.showCubano('pasar', delay);
-  }
-
-  showTrancar(delay: number = 300) {
-    this.showCubano('trancar', delay);
-  }
-
-  showGanar(delay: number = 500) {
-    this.showCubano('ganar', delay);
-  }
-
-  showCapote(delay: number = 800) {
-    this.showCubano('capote', delay);
-  }
-
-  showMula(delay: number = 300) {
-    this.showCubano('mula', delay);
-  }
-
-  showTiempo(delay: number = 200) {
-    this.showCubano('tiempo', delay);
+  getAleatorias() {
+    const todas = Object.values(this.tallasPorEvento).flat();
+    return todas.sort(() => 0.5 - Math.random()).slice(0, 4);
   }
 
   removeToast(id: string) {
