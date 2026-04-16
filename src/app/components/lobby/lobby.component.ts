@@ -12,9 +12,7 @@ import { ToastService } from '../../services/toast.service';
   imports: [CommonModule, FormsModule],
   template: `
     <!-- App Container -->
-    <div
-      class="w-full min-h-[100dvh] bg-twitch-black flex flex-col overflow-y-auto"
-    >
+    <div class="w-screen h-screen bg-twitch-black flex flex-col">
       <!-- Header Twitch Style -->
       <header class="nav-header shrink-0">
         <div class="flex items-center gap-4">
@@ -26,10 +24,8 @@ import { ToastService } from '../../services/toast.service';
       </header>
 
       <!-- Main Content -->
-      <main class="flex-1 flex flex-col pt-8 pb-12 px-6">
-        <div
-          class="w-full max-w-lg mx-auto mt-[10vh] sm:mt-[15vh] animate-fade-in mb-auto"
-        >
+      <main class="flex-1 flex items-center justify-center p-6">
+        <div class="w-full max-w-lg animate-fade-in">
           <!-- Brand Logo -->
           <div class="flex flex-col items-center justify-center mb-8">
             <img
@@ -122,11 +118,11 @@ import { ToastService } from '../../services/toast.service';
     <!-- Modal unirse -->
     <div
       *ngIf="mostraModal()"
-      class="fixed inset-0 bg-black/90 z-50 overflow-y-auto flex backdrop-blur-sm"
+      class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center backdrop-blur-sm"
       (click)="cerrarModal()"
     >
       <div
-        class="glass-panel w-[calc(100%-2rem)] max-w-md m-auto p-6"
+        class="glass-panel max-w-md w-full mx-4 p-6"
         (click)="$event.stopPropagation()"
       >
         <h3 class="title-md mb-4 text-center">Unirse a Sala</h3>
@@ -151,11 +147,9 @@ import { ToastService } from '../../services/toast.service';
     <!-- Modal Sala de Espera -->
     <div
       *ngIf="mostraSalaEspera()"
-      class="fixed inset-0 bg-black/95 z-50 overflow-y-auto flex backdrop-blur-sm"
+      class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center backdrop-blur-sm"
     >
-      <div
-        class="glass-panel-purple w-[calc(100%-2rem)] max-w-lg m-auto p-8 my-8"
-      >
+      <div class="glass-panel-purple max-w-lg w-full mx-4 p-8">
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <h2 class="title-lg">Sala de Espera</h2>
