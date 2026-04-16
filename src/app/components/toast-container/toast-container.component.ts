@@ -10,7 +10,7 @@ import { ToastService } from '../../services/toast.service';
     <div class="fixed bottom-40 right-4 space-y-2 z-50">
       <div
         *ngFor="let toast of toasts()"
-        [@toastAnimation]
+        
         class="px-6 py-3 rounded-lg font-bold text-sm gaming-subtitle
                shadow-lg animate-slideInUp
                transition-all duration-300"

@@ -1,0 +1,733 @@
+import {
+  Component,
+  OnInit,
+  signal,
+  computed,
+  effect,
+  inject,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import {
+  GameService,
+  Ficha,
+  FichaEnMesa,
+  Jugador,
+} from '../../services/game.service';
+import {
+  EnhancedDemoService,
+  Ficha as DemoFicha,
+  FichaEnMesa as DemoFichaEnMesa,
+  Jugador as DemoJugador,
+} from '../../services/enhanced-demo.service';
+import { ToastService } from '../../services/toast.service';
+import { AudioService } from '../../services/audio.service';
+import { FichaComponent } from '../ficha/ficha.component';
+import { ManoComponent } from '../mano/mano.component';
+import { MarcadorComponent } from '../marcador/marcador.component';
+import { ToastContainerComponent } from '../toast-container/toast-container.component';
+import {
+  HistorialComponent,
+  JugadaHistorico,
+} from '../historial/historial.component';
+import gsap from 'gsap';
+
+interface FichaEnTablero extends FichaEnMesa {
+  cx: number;
+  cy: number;
+  rotacion: number;
+}
+
+@Component({
+  selector: 'app-tablero',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FichaComponent,
+    ManoComponent,
+    MarcadorComponent,
+    ToastContainerComponent,
+    HistorialComponent,
+  ],
+  template: `
+    <div class="felt-table w-screen h-screen relative overflow-hidden">
+      <!-- Fondo de mesa -->
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-wood-900 via-felt-800 to-ebony"
+        style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%231a1410%22 width=%22100%22 height=%22100%22/><circle cx=%2250%22 cy=%2250%22 r=%227%22 fill=%22%23221108%22 opacity=%220.5%22/></svg>');"
+      ></div>
+
+      <!-- PANTALLA DE ESPERA DE JUGADORES -->
+      <div
+        *ngIf="esperandoJugadores()"
+        class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm"
+      >
+        <div
+          class="glass-panel p-12 rounded-3xl border border-gold/30 max-w-lg shadow-2xl text-center"
+        >
+          <h1 class="gaming-title text-5xl text-gold mb-6">🎲 ESPERANDO...</h1>
+          <p class="text-ivory text-lg mb-8">
+            Esperando a que se unan jugadores
+          </p>
+
+          <!-- Spinner de carga -->
+          <div class="mb-10 flex justify-center">
+            <div class="animate-spin">
+              <div
+                class="w-16 h-16 border-4 border-gold/20 border-t-gold rounded-full"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Jugadores conectados -->
+          <div class="bg-felt-700 p-6 rounded-xl border border-gold/20 mb-6">
+            <p class="text-gold gaming-subtitle text-sm mb-4">
+              JUGADORES CONECTADOS: {{ jugadores().length }}/4
+            </p>
+            <div class="space-y-2">
+              <div
+                *ngFor="let j of jugadores()"
+                class="p-3 bg-gold/10 rounded-lg border border-gold/30 text-ivory"
+              >
+                <p class="gaming-subtitle">{{ j.nombre }}</p>
+                <p class="text-xs text-ivory/60">
+                  Posición {{ j.posicion }} - Equipo {{ j.equipo }}
+                </p>
+              </div>
+              <div
+                *ngFor="let i of generarEspacios(4 - jugadores().length)"
+                class="p-3 bg-felt-600 rounded-lg border border-dashed border-ivory/20 text-ivory/40 text-center"
+              >
+                <p class="gaming-subtitle">Esperando jugador...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Código de sala -->
+          <div class="p-4 bg-gold/20 rounded-xl border border-gold/50 mb-6">
+            <p class="text-ivory/70 text-sm mb-2">Código de sala:</p>
+            <p class="gaming-title text-3xl text-gold mb-3">
+              {{ codigoSala() }}
+            </p>
+            <button
+              (click)="copiarCodigoSala()"
+              class="w-full px-4 py-2 bg-gold/30 hover:bg-gold/40 border border-gold text-ivory rounded-lg gaming-subtitle text-sm transition-all"
+            >
+              📋 COPIAR CÓDIGO
+            </button>
+          </div>
+
+          <!-- Botón para iniciar (solo si hay 4 jugadores) -->
+          <button
+            *ngIf="jugadores().length === 4 && puedeIniciar()"
+            (click)="iniciarPartida()"
+            [disabled]="iniciandoPartida()"
+            class="w-full px-6 py-4 bg-gradient-to-r from-gold to-copper text-ebony font-bold rounded-lg
+                   hover:scale-105 transition-all gaming-title text-lg disabled:opacity-50"
+          >
+            {{ iniciandoPartida() ? 'INICIANDO...' : '¡EMPEZAR PARTIDA!' }}
+          </button>
+
+          <!-- Info -->
+          <p class="text-ivory/50 text-xs mt-6">
+            Todos deben estar conectados para poder empezar
+          </p>
+        </div>
+      </div>
+
+      <!-- Contenedor del tablero (felt) -->
+      <div
+        #boardContainer
+        class="absolute inset-8 felt-table rounded-3xl border-8 border-copper shadow-2xl block"
+        style="z-index: 1;"
+      >
+        <!-- FONDO SOLIDO ABSOLUTO PARA SVG PARA EVITAR TRANSPARENCIAS -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10;"
+          viewBox="0 0 1000 700"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <!-- BOUNDING BOX DE SEGURIDAD. SI ESTO ESTÁ DEFORME, EL SVG ESTÁ SIENDO COMPRIMIDO -->
+          <rect
+            x="0"
+            y="0"
+            width="1000"
+            height="700"
+            fill="transparent"
+            stroke="red"
+            stroke-width="5"
+          />
+
+          <defs>
+            <linearGradient
+              id="metallic-line"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stop-color="#b8a892" />
+              <stop offset="50%" stop-color="#d1c9b4" />
+              <stop offset="100%" stop-color="#8a7e6d" />
+            </linearGradient>
+          </defs>
+
+          <!-- SVG Grid invisible para debug -->
+          <g *ngIf="mostrarGrid()"></g>
+
+          <g id="snake-container">
+            <!-- PIVOTE CENTRAL INVISIBLE PARA FORZAR BOUNDING BOX -->
+            <circle cx="500" cy="350" r="1" fill="transparent" />
+
+            <g
+              *ngFor="let f of fichasTablero()"
+              [attr.transform]="
+                'translate(' +
+                f.cx +
+                ', ' +
+                f.cy +
+                ') rotate(' +
+                f.rotacion +
+                ')'
+              "
+              style="cursor: pointer;"
+            >
+              <!-- Base -->
+              <rect
+                x="-36"
+                y="-18"
+                width="72"
+                height="36"
+                rx="6"
+                fill="#FDF5E6"
+                stroke="#e4d5b7"
+                stroke-width="1"
+              />
+
+              <!-- Central Line (Hendidura) -->
+              <line
+                x1="0"
+                y1="-18"
+                x2="0"
+                y2="18"
+                stroke="url(#metallic-line)"
+                stroke-width="2"
+              />
+              <line
+                x1="1"
+                y1="-18"
+                x2="1"
+                y2="18"
+                stroke="#ffffff"
+                stroke-width="1"
+                opacity="0.6"
+              />
+              <line
+                x1="-1"
+                y1="-18"
+                x2="-1"
+                y2="18"
+                stroke="#000000"
+                stroke-width="1"
+                opacity="0.1"
+              />
+
+              <!-- Pips A (Left) -->
+              <circle
+                *ngFor="let pip of getPips(f.valor_a, -18)"
+                [attr.cx]="pip.cx"
+                [attr.cy]="pip.cy"
+                r="3.5"
+                fill="#1a1a1a"
+              />
+
+              <!-- Pips B (Right) -->
+              <circle
+                *ngFor="let pip of getPips(f.valor_b, 18)"
+                [attr.cx]="pip.cx"
+                [attr.cy]="pip.cy"
+                r="3.5"
+                fill="#1a1a1a"
+              />
+            </g>
+          </g>
+        </svg>
+
+        <!-- Placeholders para extremos (Opcional, en las esquinas o HUD superior) -->
+        <div
+          class="absolute top-4 left-1/2 -translate-x-1/2 flex gap-8 z-10 pointers-none opacity-50"
+        >
+          <div
+            *ngIf="extremosActuales().izq !== null"
+            class="bg-black/50 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/20"
+          >
+            IZQ: {{ extremosActuales().izq }}
+          </div>
+          <div
+            *ngIf="extremosActuales().der !== null"
+            class="bg-black/50 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/20"
+          >
+            DER: {{ extremosActuales().der }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Marcador flotante -->
+      <app-marcador
+        [puntuacion]="puntuacion()"
+        [manoActual]="manoActual()"
+        [jugadores]="jugadores()"
+        [turnoActualPosicion]="turnoActualPosicion()"
+        [miEquipo]="miEquipo()"
+      ></app-marcador>
+
+      <!-- Mano del jugador -->
+      <app-mano
+        [fichas]="misFichas()"
+        [misTurno]="esmiTurno()"
+        (fichaSeleccionada)="onFichaSeleccionada($event)"
+        (pasarTurno)="onPasarTurno()"
+      ></app-mano>
+
+      <!-- Toast container -->
+      <app-toast-container></app-toast-container>
+
+      <!-- Historial de jugadas -->
+      <app-historial [agregarJugada]="ultimaJugada()"></app-historial>
+
+      <!-- Botón de debug -->
+      <button
+        *ngIf="debug()"
+        (click)="toggleGrid()"
+        class="fixed bottom-40 right-4 px-4 py-2 bg-gold/20 border border-gold text-gold rounded-lg z-50 text-xs font-mono hover:bg-gold/30"
+      >
+        GRID {{ mostrarGrid() ? 'ON' : 'OFF' }}
+      </button>
+    </div>
+  `,
+})
+export class TableroComponent implements OnInit {
+  private realGameService = inject(GameService);
+  private gameService = signal<GameService | null>(null);
+  debug = signal(false);
+  mostrarGrid = signal(false);
+  isDemoMode = signal(false);
+
+  // Propiedades locales
+  ultimaJugada = signal<JugadaHistorico | null>(null);
+  iniciandoPartida = signal(false);
+
+  // Propiedades reactivas unificadas (Computed)
+  jugadores = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.jugadores() as unknown as Jugador[])
+      : this.gameService()?.jugadores() || [];
+  });
+
+  misFichas = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.fichasEnMano() as unknown as Ficha[])
+      : this.gameService()?.fichasEnMano() || [];
+  });
+
+  fichasEnMesa = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.fichasEnMesa() as unknown as FichaEnMesa[])
+      : this.gameService()?.fichasEnMesa() || [];
+  });
+
+  manoActual = computed(() => {
+    return this.isDemoMode()
+      ? 1
+      : this.gameService()?.partida()?.mano_actual || 1;
+  });
+
+  esmiTurno = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.esmiTurno()
+      : this.gameService()?.esmiTurno() || false;
+  });
+
+  extremosActuales = computed(() => {
+    return this.isDemoMode()
+      ? (this.demoService.extremosActuales() as any)
+      : this.gameService()?.extremosActuales() || { izq: null, der: null };
+  });
+
+  puntuacion = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.puntuacion()
+      : this.gameService()?.puntuacion() || { eq0: 0, eq1: 0 };
+  });
+
+  turnoActualPosicion = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.turnoActual()
+      : this.gameService()?.manoActual()?.turno_actual || 0;
+  });
+
+  miEquipo = computed(() => {
+    return this.isDemoMode()
+      ? this.demoService.miJugador()?.equipo || 0
+      : this.gameService()?.miJugador()?.equipo || 0;
+  });
+
+  esperandoJugadores = computed(() => {
+    if (this.isDemoMode()) return false;
+    return this.gameService()?.partida()?.estado === 'esperando';
+  });
+
+  codigoSala = computed(() => {
+    return this.gameService()?.partida()?.codigo_sala || '';
+  });
+
+  puedeIniciar = computed(() => {
+    if (this.isDemoMode()) return false;
+    return this.esperandoJugadores() && this.jugadores().length === 4;
+  });
+
+  // Computed
+  fichasTablero = computed(() => {
+    const fichas = [...this.fichasEnMesa()].sort(
+      (a, b) => a.orden_jugada - b.orden_jugada,
+    );
+    if (!fichas.length) return [];
+
+    const U = 36;
+    const CX = 500;
+    const CY = 350;
+    const MIN_X = 120;
+    const MAX_X = 880;
+    const MIN_Y = 120;
+    const MAX_Y = 580;
+
+    const DIRS = {
+      N: { x: 0, y: -1, angle: 270 },
+      S: { x: 0, y: 1, angle: 90 },
+      E: { x: 1, y: 0, angle: 0 },
+      W: { x: -1, y: 0, angle: 180 },
+    };
+
+    const getTurnDir = (dir: any, x: number, y: number) => {
+      if (dir === DIRS.E || dir === DIRS.W) {
+        return y > CY ? DIRS.N : DIRS.S;
+      }
+      return x > CX ? DIRS.W : DIRS.E;
+    };
+
+    const result: (FichaEnMesa & {
+      cx: number;
+      cy: number;
+      rotacion: number;
+    })[] = [];
+    let cursorA = { point: { x: CX, y: CY }, dir: DIRS.W, openVal: -1 };
+    let cursorB = { point: { x: CX, y: CY }, dir: DIRS.E, openVal: -1 };
+
+    console.log('--- RECALCULANDO MESA ---');
+    fichas.forEach((ficha, index) => {
+      const isDouble = ficha.valor_a === ficha.valor_b;
+
+      if (index === 0) {
+        if (isDouble) {
+          result.push({ ...ficha, cx: CX, cy: CY, rotacion: 90 });
+          cursorA = {
+            point: { x: CX - 1 * U, y: CY },
+            dir: DIRS.W,
+            openVal: ficha.valor_a,
+          };
+          cursorB = {
+            point: { x: CX + 1 * U, y: CY },
+            dir: DIRS.E,
+            openVal: ficha.valor_b,
+          };
+        } else {
+          result.push({ ...ficha, cx: CX, cy: CY, rotacion: 0 });
+          cursorA = {
+            point: { x: CX - 2 * U, y: CY },
+            dir: DIRS.W,
+            openVal: ficha.valor_a,
+          };
+          cursorB = {
+            point: { x: CX + 2 * U, y: CY },
+            dir: DIRS.E,
+            openVal: ficha.valor_b,
+          };
+        }
+        return;
+      }
+
+      const isA = ficha.lado === 'izquierda';
+      const cursor = isA ? cursorA : cursorB;
+
+      // 1. Path check & Corner turn
+      let testX = cursor.point.x + cursor.dir.x * (2 * U);
+      let testY = cursor.point.y + cursor.dir.y * (2 * U);
+
+      if (testX < MIN_X || testX > MAX_X || testY < MIN_Y || testY > MAX_Y) {
+        const newDir = getTurnDir(cursor.dir, cursor.point.x, cursor.point.y);
+        cursor.point.x += cursor.dir.x * 0.5 * U + newDir.x * 0.5 * U;
+        cursor.point.y += cursor.dir.y * 0.5 * U + newDir.y * 0.5 * U;
+        cursor.dir = newDir;
+      }
+
+      // 2. Determine match and attach orientation
+      const matchA = ficha.valor_a === cursor.openVal;
+      const attachedHalf = matchA ? 'A' : 'B';
+      cursor.openVal = matchA ? ficha.valor_b : ficha.valor_a;
+
+      let cx_new, cy_new, rotacion;
+
+      if (isDouble) {
+        cx_new = cursor.point.x + cursor.dir.x * 1 * U;
+        cy_new = cursor.point.y + cursor.dir.y * 1 * U;
+        rotacion = cursor.dir.angle === 0 || cursor.dir.angle === 180 ? 90 : 0;
+
+        cursor.point.x += cursor.dir.x * 2 * U;
+        cursor.point.y += cursor.dir.y * 2 * U;
+      } else {
+        cx_new = cursor.point.x + cursor.dir.x * 1 * U;
+        cy_new = cursor.point.y + cursor.dir.y * 1 * U;
+        rotacion =
+          attachedHalf === 'B'
+            ? (cursor.dir.angle + 180) % 360
+            : cursor.dir.angle;
+
+        cursor.point.x += cursor.dir.x * 2 * U;
+        cursor.point.y += cursor.dir.y * 2 * U;
+      }
+
+      result.push({ ...ficha, cx: cx_new, cy: cy_new, rotacion });
+    });
+
+    console.log(
+      '✅ FICHAS TABLERO CALCULADAS (Con coordenadas validas):',
+      result.map(
+        (f) => `[${f.valor_a}-${f.valor_b}] -> cx: ${f.cx}, cy: ${f.cy}`,
+      ),
+    );
+    return result;
+  });
+
+  constructor(
+    private route: ActivatedRoute,
+    private toast: ToastService,
+    private audio: AudioService,
+    private demoService: EnhancedDemoService,
+  ) {
+    this.playAmbientSound();
+  }
+
+  ngOnInit() {
+    this.route.params.subscribe(async (params) => {
+      const gameId = params['id'];
+
+      // Detectar si es modo demo
+      const isDemo = gameId?.includes('DEMO') || gameId?.includes('demo');
+
+      if (isDemo) {
+        this.isDemoMode.set(true);
+        // Modo demo mejorado
+        this.demoService.inicializarDemo('manual');
+
+        // Suscribirse a eventos del demo
+        this.demoService.fichaJugada$.subscribe(({ jugador, ficha }) => {
+          // No agreguar si es STREAMER (ya se agregó en onFichaSeleccionada)
+          if (!jugador.includes('STREAMER')) {
+            this.ultimaJugada.set({
+              id: `jugada-${Date.now()}`,
+              jugador: jugador,
+              ficha: ficha === 'PASÓ' ? '' : ficha,
+              timestamp: Date.now(),
+              tipo: ficha === 'PASÓ' ? 'paso' : 'jugada',
+            });
+          }
+
+          this.toast.showToast(`${jugador} jugó ${ficha}`, 'cubano', 2000);
+          this.audio.playFichaClack();
+        });
+
+        this.demoService.turnoChanged$.subscribe(({ jugador }) => {
+          if (jugador.includes('STREAMER')) {
+            this.toast.showToast('¡ES TU TURNO!', 'info', 2000);
+            this.audio.playTurno();
+          } else {
+            this.toast.showToast(`Turno de ${jugador}`, 'info', 1500);
+          }
+        });
+
+        this.demoService.manoTerminada$.subscribe(({ ganador, puntos }) => {
+          this.ultimaJugada.set({
+            id: `mano-limpia-${Date.now()}`,
+            jugador: ganador,
+            ficha: `+${puntos}`,
+            timestamp: Date.now(),
+            tipo: 'mano-limpia',
+          });
+
+          this.toast.showToast(
+            `${ganador} ganó +${puntos} puntos`,
+            'success',
+            3000,
+          );
+          this.audio.playManoLimpia();
+        });
+      } else if (gameId) {
+        this.isDemoMode.set(false);
+        // Modo normal con GameService
+        const game = this.realGameService;
+        this.gameService.set(game);
+
+        // Guardar el código de sala
+
+        await game.setCurrentGame(gameId);
+
+        // Suscribirse a mensajes
+        game.toastMessage$.subscribe((msg) => {
+          this.toast.showToast(msg, 'success', 3000);
+          this.audio.playFichaClack();
+        });
+
+        game.errorMessage$.subscribe((msg) => {
+          this.toast.showToast(msg, 'error', 3000);
+          this.audio.playError();
+        });
+      }
+    });
+  }
+
+  onFichaSeleccionada(event: { ficha: Ficha; lado: 'izquierda' | 'derecha' }) {
+    const game = this.gameService();
+
+    if (game) {
+      game.jugarFicha(event.ficha, event.lado);
+      this.toast.showCubano();
+    } else {
+      // Modo demo
+      this.demoService.jugarFicha(event.ficha as any, event.lado);
+
+      // Agregar al historial
+      this.ultimaJugada.set({
+        id: `jugada-${Date.now()}`,
+        jugador: '🎬 STREAMER',
+        ficha: `${event.ficha.valor_a}-${event.ficha.valor_b}`,
+        lado: event.lado,
+        timestamp: Date.now(),
+        tipo: 'jugada',
+      });
+    }
+  }
+
+  onPasarTurno() {
+    const game = this.gameService();
+
+    if (game) {
+      game.pasarTurno();
+    } else {
+      // Modo demo
+      this.demoService.pasarTurno();
+
+      // Agregar al historial
+      this.ultimaJugada.set({
+        id: `paso-${Date.now()}`,
+        jugador: '🎬 STREAMER',
+        ficha: '',
+        timestamp: Date.now(),
+        tipo: 'paso',
+      });
+    }
+
+    this.toast.showCubano();
+  }
+
+  getPips(val: number, offsetX: number): { cx: number; cy: number }[] {
+    const d = 9;
+    const tl = { x: -d, y: -d },
+      tm = { x: 0, y: -d },
+      tr = { x: d, y: -d };
+    const ml = { x: -d, y: 0 },
+      mm = { x: 0, y: 0 },
+      mr = { x: d, y: 0 };
+    const bl = { x: -d, y: d },
+      bm = { x: 0, y: d },
+      br = { x: d, y: d };
+
+    let pts: { x: number; y: number }[] = [];
+    switch (val) {
+      case 1:
+        pts = [mm];
+        break;
+      case 2:
+        pts = [tl, br];
+        break;
+      case 3:
+        pts = [tl, mm, br];
+        break;
+      case 4:
+        pts = [tl, tr, bl, br];
+        break;
+      case 5:
+        pts = [tl, tr, mm, bl, br];
+        break;
+      case 6:
+        pts = [tl, ml, bl, tr, mr, br];
+        break;
+      case 7:
+        pts = [tl, tm, tr, mm, bl, bm, br];
+        break;
+      case 8:
+        pts = [tl, tm, tr, ml, mr, bl, bm, br];
+        break;
+      case 9:
+        pts = [tl, tm, tr, ml, mm, mr, bl, bm, br];
+        break;
+    }
+    return pts.map((p) => ({ cx: p.x + offsetX, cy: p.y }));
+  }
+
+  generarGrid(): number[] {
+    return Array.from({ length: 15 }, (_, i) => i);
+  }
+
+  generarEspacios(cantidad: number): number[] {
+    return Array.from({ length: cantidad }, (_, i) => i);
+  }
+
+  toggleGrid() {
+    this.mostrarGrid.update((v) => !v);
+  }
+
+  async iniciarPartida() {
+    const game = this.gameService();
+    if (!game) return;
+
+    this.iniciandoPartida.set(true);
+    try {
+      const exito = await game.iniciarPartida();
+      if (exito) {
+        this.toast.showToast('¡Partida iniciada!', 'success', 3000);
+        this.audio.playTurno();
+      } else {
+        this.toast.showToast('Error al iniciar la partida', 'error', 3000);
+      }
+    } catch (e) {
+      console.error('Error inicializando partida:', e);
+      this.toast.showToast('Error al iniciar la partida', 'error', 3000);
+    } finally {
+      this.iniciandoPartida.set(false);
+    }
+  }
+
+  copiarCodigoSala() {
+    const codigo = this.codigoSala();
+    if (codigo) {
+      navigator.clipboard.writeText(codigo);
+      this.toast.showToast('📋 Código copiado', 'info', 2000);
+    }
+  }
+
+  private playAmbientSound() {
+    // Sonido ambiental del tablero (opcional)
+    // Esto podría ser un sonido suave de fondo
+  }
+}

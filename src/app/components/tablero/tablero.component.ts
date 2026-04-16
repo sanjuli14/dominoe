@@ -3,7 +3,6 @@ import {
   OnInit,
   signal,
   computed,
-  effect,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -30,12 +29,60 @@ import {
   HistorialComponent,
   JugadaHistorico,
 } from '../historial/historial.component';
-import gsap from 'gsap';
 
-interface FichaEnTablero extends FichaEnMesa {
+// ============================================
+// SISTEMA DE GRID ABSTRACTO
+// ============================================
+interface GridCell {
   x: number;
   y: number;
+}
+
+interface Direction {
+  x: number;
+  y: number;
+  angle: number;
+  name: 'N' | 'S' | 'E' | 'W';
+}
+
+const DIRECTIONS = {
+  N: { x: 0, y: -1, angle: 270, name: 'N' as const },
+  S: { x: 0, y: 1, angle: 90, name: 'S' as const },
+  E: { x: 1, y: 0, angle: 0, name: 'E' as const },
+  W: { x: -1, y: 0, angle: 180, name: 'W' as const },
+};
+
+const GRID_CONFIG = {
+  CELL_SIZE: 40,        // Tamaño de celda en px
+  FICHA_WIDTH_CELLS: 2,  // Ficha normal: 2 celdas de largo
+  FICHA_HEIGHT_CELLS: 1, // Ficha normal: 1 celda de ancho
+  MULA_SIZE_CELLS: 1,    // Mula: ocupa 1x1 pero se renderiza perpendicular
+  VIEWBOX_WIDTH: 1000,
+  VIEWBOX_HEIGHT: 700,
+  MARGIN_X: 80,
+  MARGIN_Y: 80,
+};
+
+// Extremo libre de la cadena de fichas
+interface Extremo {
+  gridX: number;
+        gridY: number;
+  direccion: Direction;
+  valorLibre: number | null;
+  isActivo: boolean;
+}
+
+// Ficha normalizada para el tablero
+interface FichaTablero {
+  id: string;
+  valor_a: number;
+  valor_b: number;
+  esMula: boolean;
+  cx: number;
+  cy: number;
   rotacion: number;
+  lado: 'izquierda' | 'derecha';
+  orden: number;
 }
 
 @Component({
@@ -51,11 +98,27 @@ interface FichaEnTablero extends FichaEnMesa {
   ],
   template: `
     <div class="felt-table w-screen h-screen relative overflow-hidden">
-      <!-- Fondo de mesa -->
+      <!-- Fondo de mesa de madera -->
       <div
-        class="absolute inset-0 bg-gradient-to-br from-wood-900 via-felt-800 to-ebony"
-        style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%231a1410%22 width=%22100%22 height=%22100%22/><circle cx=%2250%22 cy=%2250%22 r=%227%22 fill=%22%23221108%22 opacity=%220.5%22/></svg>');"
-      ></div>
+        class="absolute inset-0"
+        style="
+          background: 
+            radial-gradient(ellipse at 30% 20%, rgba(139, 90, 43, 0.4) 0%, transparent 50%),
+            radial-gradient(ellipse at 70% 80%, rgba(101, 67, 33, 0.4) 0%, transparent 50%),
+            linear-gradient(135deg, #2a1810 0%, #1a0f0a 50%, #0f0805 100%);
+        "
+      >
+        <!-- Patrón de fieltro sutil -->
+        <div
+          class="absolute inset-0 opacity-30"
+          style="
+            background-image: 
+              radial-gradient(circle at 25% 25%, rgba(139, 69, 19, 0.3) 1px, transparent 1px),
+              radial-gradient(circle at 75% 75%, rgba(160, 82, 45, 0.3) 1px, transparent 1px);
+            background-size: 20px 20px;
+          "
+        ></div>
+      </div>
 
       <!-- PANTALLA DE ESPERA DE JUGADORES -->
       <div
@@ -135,72 +198,156 @@ interface FichaEnTablero extends FichaEnMesa {
         </div>
       </div>
 
-      <!-- Contenedor del tablero (felt) -->
+      <!-- CONTENEDOR PRINCIPAL DEL TABLERO -->
       <div
-        #boardContainer
-        class="absolute inset-8 felt-table rounded-3xl border-8 border-copper overflow-hidden shadow-2xl flex items-center justify-center"
+        class="absolute inset-4 rounded-2xl border-4 border-amber-900/50 shadow-2xl overflow-hidden"
+        style="background: rgba(40, 25, 15, 0.3);"
       >
-        <!-- Grid invisible para serpiente -->
+        <!-- SVG TABLERO -->
         <svg
-          *ngIf="mostrarGrid()"
-          class="absolute inset-0 w-full h-full"
-          style="background: transparent; pointer-events: none"
+          class="w-full h-full"
+          viewBox="0 0 1000 700"
+          preserveAspectRatio="xMidYMid meet"
         >
-          <!-- Lineas horizontales -->
-          <line
-            *ngFor="let i of generarGrid()"
-            [attr.x1]="0"
-            [attr.y1]="i * 60"
-            [attr.x2]="'100%'"
-            [attr.y2]="i * 60"
-            stroke="rgba(236, 200, 154, 0.1)"
-            stroke-width="1"
-          />
-          <!-- Lineas verticales -->
-          <line
-            *ngFor="let i of generarGrid()"
-            [attr.x1]="i * 60"
-            [attr.y1]="0"
-            [attr.x2]="i * 60"
-            [attr.y2]="'100%'"
-            stroke="rgba(236, 200, 154, 0.1)"
-            stroke-width="1"
-          />
+          <defs>
+            <!-- Gradiente metálico para la hendidura -->
+            <linearGradient id="metallic" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#8B7355" />
+              <stop offset="30%" stop-color="#D4C5B0" />
+              <stop offset="50%" stop-color="#F5F5DC" />
+              <stop offset="70%" stop-color="#D4C5B0" />
+              <stop offset="100%" stop-color="#8B7355" />
+            </linearGradient>
+
+            <!-- Sombra de la ficha -->
+            <filter id="fichaShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.4"/>
+            </filter>
+
+            <!-- Relieve para los pips -->
+            <filter id="pipRelief" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0.5" dy="0.5" stdDeviation="0.5" flood-color="#000" flood-opacity="0.5"/>
+            </filter>
+
+            <!-- Gradiente de hueso/marfil para la ficha -->
+            <linearGradient id="huesoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FFFEF5" />
+              <stop offset="50%" stop-color="#F5F5DC" />
+              <stop offset="100%" stop-color="#E8E4D0" />
+            </linearGradient>
+          </defs>
+
+          <!-- GRID DEBUG (opcional) -->
+          <g *ngIf="mostrarGrid()">
+            <line
+              *ngFor="let i of gridLinesX()"
+              [attr.x1]="i" y1="0" [attr.x2]="i" y2="700"
+              stroke="rgba(255,255,255,0.1)" stroke-width="1"
+            />
+            <line
+              *ngFor="let i of gridLinesY()"
+              x1="0" [attr.y1]="i" x2="1000" [attr.y2]="i"
+              stroke="rgba(255,255,255,0.1)" stroke-width="1"
+            />
+          </g>
+
+          <!-- FICHAS EN EL TABLERO -->
+          <g id="domino-snake">
+            <g
+              *ngFor="let f of fichasTablero(); trackBy: trackByFicha"
+              [attr.transform]="'translate(' + f.cx + ', ' + f.cy + ') rotate(' + f.rotacion + ')'"
+            >
+              <!-- Sombra proyectada -->
+              <rect
+                x="-34" y="-16" width="68" height="32" rx="5"
+                fill="none"
+                filter="url(#fichaShadow)"
+              />
+
+              <!-- Base de la ficha (hueso/marfil) -->
+              <rect
+                x="-32" y="-16" width="64" height="32" rx="5"
+                fill="url(#huesoGradient)"
+                stroke="#C4B49A"
+                stroke-width="1"
+              />
+
+              <!-- Borde interior sutil -->
+              <rect
+                x="-30" y="-14" width="60" height="28" rx="3"
+                fill="none"
+                stroke="rgba(0,0,0,0.05)"
+                stroke-width="1"
+              />
+
+              <!-- Hendidura central metálica -->
+              <line
+                x1="0" y1="-15" x2="0" y2="15"
+                stroke="url(#metallic)"
+                stroke-width="3"
+              />
+
+              <!-- Sombra sutil de la hendidura -->
+              <line
+                x1="-1" y1="-15" x2="-1" y2="15"
+                stroke="rgba(0,0,0,0.2)"
+                stroke-width="1"
+              />
+              <line
+                x1="1" y1="-15" x2="1" y2="15"
+                stroke="rgba(255,255,255,0.5)"
+                stroke-width="1"
+              />
+
+              <!-- Lado A (izquierda) -->
+              <g transform="translate(-16, 0)">
+                <circle
+                  *ngFor="let pip of getPips(f.valor_a)"
+                  [attr.cx]="pip.x"
+                  [attr.cy]="pip.y"
+                  r="3"
+                  fill="#1a1a1a"
+                  filter="url(#pipRelief)"
+                />
+              </g>
+
+              <!-- Lado B (derecha) -->
+              <g transform="translate(16, 0)">
+                <circle
+                  *ngFor="let pip of getPips(f.valor_b)"
+                  [attr.cx]="pip.x"
+                  [attr.cy]="pip.y"
+                  r="3"
+                  fill="#1a1a1a"
+                  filter="url(#pipRelief)"
+                />
+              </g>
+            </g>
+          </g>
+
+          <!-- DEBUG: Mostrar posición de extremos -->
+          <g *ngIf="debug()">
+            <text x="10" y="20" fill="#0f0" font-size="12" font-family="monospace">
+              Fichas: {{ fichasTablero().length }} | Izq: {{ extremosDebug()?.izq }} | Der: {{ extremosDebug()?.der }}
+            </text>
+          </g>
         </svg>
 
-        <!-- Fichas en mesa -->
-        <div class="absolute inset-0 w-full h-full">
+        <!-- Extremos actuales (HUD) -->
+        <div
+          class="absolute top-4 left-1/2 -translate-x-1/2 flex gap-8 z-10 opacity-70"
+        >
           <div
-            *ngFor="let ficha of fichasTablero()"
-            #fichaElements
-            class="absolute w-24 h-12 pointer-events-auto"
-            [style.left.px]="ficha.x"
-            [style.top.px]="ficha.y"
-            [style.transform]="'rotate(' + ficha.rotacion + 'deg)'"
+            *ngIf="extremosActuales().izq !== null"
+            class="bg-black/60 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/30 backdrop-blur-sm"
           >
-            <app-ficha
-              [valor_a]="ficha.valor_a"
-              [valor_b]="ficha.valor_b"
-              [id]="ficha.id"
-            ></app-ficha>
+            <span class="text-gold">IZQ:</span> {{ extremosActuales().izq }}
           </div>
-        </div>
-
-        <!-- Placeholders para extremos -->
-        <div
-          *ngIf="extremosActuales().izq !== null"
-          class="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2"
-        >
-          <div class="text-ivory/30 text-2xl gaming-subtitle">
-            IZQUIERDA: {{ extremosActuales().izq }}
-          </div>
-        </div>
-        <div
-          *ngIf="extremosActuales().der !== null"
-          class="absolute top-1/2 right-1/4 translate-y-1/2 translate-x-1/2"
-        >
-          <div class="text-ivory/30 text-2xl gaming-subtitle">
-            DERECHA: {{ extremosActuales().der }}
+          <div
+            *ngIf="extremosActuales().der !== null"
+            class="bg-black/60 px-4 py-2 rounded-full text-ivory gaming-subtitle border border-ivory/30 backdrop-blur-sm"
+          >
+            <span class="text-gold">DER:</span> {{ extremosActuales().der }}
           </div>
         </div>
       </div>
@@ -228,29 +375,33 @@ interface FichaEnTablero extends FichaEnMesa {
       <!-- Historial de jugadas -->
       <app-historial [agregarJugada]="ultimaJugada()"></app-historial>
 
-      <!-- Botón de debug -->
-      <button
-        *ngIf="debug()"
-        (click)="toggleGrid()"
-        class="fixed bottom-40 right-4 px-4 py-2 bg-gold/20 border border-gold text-gold rounded-lg z-50 text-xs font-mono hover:bg-gold/30"
-      >
-        GRID {{ mostrarGrid() ? 'ON' : 'OFF' }}
-      </button>
+      <!-- Botones de debug -->
+      <div class="fixed bottom-40 right-4 flex flex-col gap-2 z-50">
+        <button
+          *ngIf="debug()"
+          (click)="toggleGrid()"
+          class="px-4 py-2 bg-gold/20 border border-gold text-gold rounded-lg text-xs font-mono hover:bg-gold/30"
+        >
+          GRID {{ mostrarGrid() ? 'ON' : 'OFF' }}
+        </button>
+      </div>
     </div>
   `,
 })
 export class TableroComponent implements OnInit {
   private realGameService = inject(GameService);
   private gameService = signal<GameService | null>(null);
+  
+  // Señales de estado
   debug = signal(false);
   mostrarGrid = signal(false);
   isDemoMode = signal(false);
-
-  // Propiedades locales
   ultimaJugada = signal<JugadaHistorico | null>(null);
   iniciandoPartida = signal(false);
 
-  // Propiedades reactivas unificadas (Computed)
+  // ============================================
+  // PROPIEDADES REACTIVAS UNIFICADAS
+  // ============================================
   jugadores = computed(() => {
     return this.isDemoMode()
       ? (this.demoService.jugadores() as unknown as Jugador[])
@@ -287,6 +438,15 @@ export class TableroComponent implements OnInit {
       : this.gameService()?.extremosActuales() || { izq: null, der: null };
   });
 
+  extremosDebug = computed(() => {
+    const fichas = this.fichasTablero();
+    if (fichas.length === 0) return null;
+    return {
+      izq: fichas[0]?.valor_a + '-' + fichas[0]?.valor_b,
+      der: fichas[fichas.length - 1]?.valor_a + '-' + fichas[fichas.length - 1]?.valor_b,
+    };
+  });
+
   puntuacion = computed(() => {
     return this.isDemoMode()
       ? this.demoService.puntuacion()
@@ -319,14 +479,41 @@ export class TableroComponent implements OnInit {
     return this.esperandoJugadores() && this.jugadores().length === 4;
   });
 
-  // Computed
-  fichasTablero = computed(() => {
-    return this.fichasEnMesa().map((f) => ({
-      ...f,
-      x: this.calculateFichaX(f.orden_jugada),
-      y: this.calculateFichaY(f.orden_jugada),
-      rotacion: this.calculateRotacion(f),
-    }));
+  // Grid debug lines
+  gridLinesX = computed(() => {
+    const lines = [];
+    for (let i = 0; i <= 1000; i += GRID_CONFIG.CELL_SIZE) {
+      lines.push(i);
+    }
+    return lines;
+  });
+
+  gridLinesY = computed(() => {
+    const lines = [];
+    for (let i = 0; i <= 700; i += GRID_CONFIG.CELL_SIZE) {
+      lines.push(i);
+    }
+    return lines;
+  });
+
+  // ============================================
+  // ALGORITMO SNAKE - RENDERIZADO DE FICHAS
+  // ============================================
+  fichasTablero = computed((): FichaTablero[] => {
+    const rawFichas = this.fichasEnMesa();
+    
+    if (!rawFichas || rawFichas.length === 0) {
+      return [];
+    }
+
+    // Normalizar fichas de ambos servicios al formato interno
+    const fichasNormalizadas = this.normalizarFichas(rawFichas);
+    
+    // Ordenar por orden de jugada
+    const fichasOrdenadas = fichasNormalizadas.sort((a, b) => a.orden - b.orden);
+
+    // Calcular posiciones en el grid
+    return this.calcularPosicionesSnake(fichasOrdenadas);
   });
 
   constructor(
@@ -334,25 +521,18 @@ export class TableroComponent implements OnInit {
     private toast: ToastService,
     private audio: AudioService,
     private demoService: EnhancedDemoService,
-  ) {
-    this.playAmbientSound();
-  }
+  ) {}
 
   ngOnInit() {
     this.route.params.subscribe(async (params) => {
       const gameId = params['id'];
-
-      // Detectar si es modo demo
       const isDemo = gameId?.includes('DEMO') || gameId?.includes('demo');
 
       if (isDemo) {
         this.isDemoMode.set(true);
-        // Modo demo mejorado
         this.demoService.inicializarDemo('manual');
 
-        // Suscribirse a eventos del demo
         this.demoService.fichaJugada$.subscribe(({ jugador, ficha }) => {
-          // No agreguar si es STREAMER (ya se agregó en onFichaSeleccionada)
           if (!jugador.includes('STREAMER')) {
             this.ultimaJugada.set({
               id: `jugada-${Date.now()}`,
@@ -362,7 +542,6 @@ export class TableroComponent implements OnInit {
               tipo: ficha === 'PASÓ' ? 'paso' : 'jugada',
             });
           }
-
           this.toast.showToast(`${jugador} jugó ${ficha}`, 'cubano', 2000);
           this.audio.playFichaClack();
         });
@@ -384,25 +563,15 @@ export class TableroComponent implements OnInit {
             timestamp: Date.now(),
             tipo: 'mano-limpia',
           });
-
-          this.toast.showToast(
-            `${ganador} ganó +${puntos} puntos`,
-            'success',
-            3000,
-          );
+          this.toast.showToast(`${ganador} ganó +${puntos} puntos`, 'success', 3000);
           this.audio.playManoLimpia();
         });
       } else if (gameId) {
         this.isDemoMode.set(false);
-        // Modo normal con GameService
         const game = this.realGameService;
         this.gameService.set(game);
-
-        // Guardar el código de sala
-
         await game.setCurrentGame(gameId);
 
-        // Suscribirse a mensajes
         game.toastMessage$.subscribe((msg) => {
           this.toast.showToast(msg, 'success', 3000);
           this.audio.playFichaClack();
@@ -416,6 +585,274 @@ export class TableroComponent implements OnInit {
     });
   }
 
+  // ============================================
+  // NORMALIZACIÓN DE FICHAS
+  // ============================================
+  private normalizarFichas(fichas: any[]): FichaTablero[] {
+    return fichas.map((f, index) => {
+      // Detectar formato del servicio
+      const isGameService = 'lado' in f && 'orden_jugada' in f;
+      const isDemoService = 'lado_jugado' in f && 'orden' in f;
+
+      let lado: 'izquierda' | 'derecha';
+      let orden: number;
+
+      if (isGameService) {
+        // Formato GameService
+        lado = f.lado;
+        orden = f.orden_jugada ?? index;
+      } else if (isDemoService) {
+        // Formato DemoService - convertir
+        lado = f.lado_jugado === 'a' ? 'izquierda' : 'derecha';
+        orden = f.orden ?? index;
+      } else {
+        // Fallback
+        lado = 'derecha';
+        orden = index;
+      }
+
+      return {
+        id: f.id || `ficha-${index}`,
+        valor_a: f.valor_a,
+        valor_b: f.valor_b,
+        esMula: f.valor_a === f.valor_b,
+        cx: 0,
+        cy: 0,
+        rotacion: 0,
+        lado,
+        orden,
+      };
+    });
+  }
+
+  // ============================================
+  // ALGORITMO SNAKE - PATHFINDING & FLOW
+  // ============================================
+  private calcularPosicionesSnake(fichas: FichaTablero[]): FichaTablero[] {
+    if (fichas.length === 0) return [];
+
+    const { CELL_SIZE, VIEWBOX_WIDTH, VIEWBOX_HEIGHT, MARGIN_X, MARGIN_Y } = GRID_CONFIG;
+    
+    // Centro del tablero en coordenadas de grid
+    const centerX = VIEWBOX_WIDTH / 2;
+    const centerY = VIEWBOX_HEIGHT / 2;
+
+    // Límites del tablero
+    const minX = MARGIN_X;
+    const maxX = VIEWBOX_WIDTH - MARGIN_X;
+    const minY = MARGIN_Y;
+    const maxY = VIEWBOX_HEIGHT - MARGIN_Y;
+
+    const resultado: FichaTablero[] = [];
+
+    // Dos extremos: izquierda (A) y derecha (B) de la cadena
+    let extremoIzq: Extremo = {
+      gridX: centerX,
+      gridY: centerY,
+      direccion: DIRECTIONS.W,
+      valorLibre: null,
+      isActivo: false,
+    };
+
+    let extremoDer: Extremo = {
+      gridX: centerX,
+      gridY: centerY,
+      direccion: DIRECTIONS.E,
+      valorLibre: null,
+      isActivo: false,
+    };
+
+    fichas.forEach((ficha, index) => {
+      const esMula = ficha.esMula;
+
+      if (index === 0) {
+        // Primera ficha: en el centro
+        const fichaCentro = {
+          ...ficha,
+          cx: centerX,
+          cy: centerY,
+          rotacion: esMula ? 90 : 0,
+        };
+        resultado.push(fichaCentro);
+
+        // Configurar extremos después de la primera ficha
+        if (esMula) {
+          // Mula en centro: ambos extremos apuntan hacia afuera perpendicularmente
+          extremoIzq = {
+            gridX: centerX - CELL_SIZE,
+            gridY: centerY,
+            direccion: DIRECTIONS.W,
+            valorLibre: ficha.valor_a,
+            isActivo: true,
+          };
+          extremoDer = {
+            gridX: centerX + CELL_SIZE,
+            gridY: centerY,
+            direccion: DIRECTIONS.E,
+            valorLibre: ficha.valor_b,
+            isActivo: true,
+          };
+        } else {
+          // Ficha normal en centro
+          extremoIzq = {
+            gridX: centerX - CELL_SIZE * 2,
+            gridY: centerY,
+            direccion: DIRECTIONS.W,
+            valorLibre: ficha.valor_a,
+            isActivo: true,
+          };
+          extremoDer = {
+            gridX: centerX + CELL_SIZE * 2,
+            gridY: centerY,
+            direccion: DIRECTIONS.E,
+            valorLibre: ficha.valor_b,
+            isActivo: true,
+          };
+        }
+      } else {
+        // Fichas subsiguientes: se colocan en los extremos
+        const esExtremoIzq = ficha.lado === 'izquierda';
+        const extremo = esExtremoIzq ? extremoIzq : extremoDer;
+
+        if (!extremo.isActivo) {
+          console.warn('Extremo no activo, ignorando ficha', ficha);
+          return;
+        }
+
+        // Verificar si necesitamos girar (colisión con bordes)
+        const pasoX = extremo.direccion.x * CELL_SIZE * 2;
+        const pasoY = extremo.direccion.y * CELL_SIZE * 2;
+        const testX = extremo.gridX + pasoX;
+        const testY = extremo.gridY + pasoY;
+
+        let direccionActual = extremo.direccion;
+
+        // Detectar colisión con bordes y girar
+        if (testX < minX || testX > maxX || testY < minY || testY > maxY) {
+          direccionActual = this.calcularGiro(direccionActual, extremo.gridX, extremo.gridY, centerX, centerY);
+          
+          // Ajustar posición para el giro
+          extremo.gridX += direccionActual.x * CELL_SIZE;
+          extremo.gridY += direccionActual.y * CELL_SIZE;
+        }
+
+        // Calcular rotación de la ficha
+        let rotacion: number;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (esMula) {
+          // Las mulas se colocan PERPENDICULARES a la dirección de flujo
+          // Si vamos horizontal (E/W), la mula es vertical (90°)
+          // Si vamos vertical (N/S), la mula es horizontal (0°)
+          if (direccionActual.name === 'E' || direccionActual.name === 'W') {
+            rotacion = 90; // Vertical
+          } else {
+            rotacion = 0; // Horizontal
+          }
+        } else {
+          // Fichas normales siguen la dirección de flujo
+          // Determinar si necesitamos invertir basado en qué lado embona
+          const embonaA = ficha.valor_a === extremo.valorLibre;
+          
+          if (embonaA) {
+            // El valor A embona, así que va hacia el extremo
+            // Rotación normal según dirección
+            rotacion = direccionActual.angle;
+          } else {
+            // El valor B embona, invertimos la ficha
+            rotacion = (direccionActual.angle + 180) % 360;
+          }
+        }
+
+        // Posicionar la ficha
+        const fichaPosicionada = {
+          ...ficha,
+          cx: extremo.gridX,
+          cy: extremo.gridY,
+          rotacion,
+        };
+        resultado.push(fichaPosicionada);
+
+        // Actualizar el extremo para la siguiente ficha
+        const nuevoValorLibre = ficha.valor_a === extremo.valorLibre ? ficha.valor_b : ficha.valor_a;
+        
+        // Avanzar el cursor del extremo
+        const avance = esMula ? CELL_SIZE : CELL_SIZE * 2;
+        const nuevoExtremo: Extremo = {
+          gridX: extremo.gridX + direccionActual.x * avance,
+          gridY: extremo.gridY + direccionActual.y * avance,
+          direccion: direccionActual,
+          valorLibre: nuevoValorLibre,
+          isActivo: true,
+        };
+
+        if (esExtremoIzq) {
+          extremoIzq = nuevoExtremo;
+        } else {
+          extremoDer = nuevoExtremo;
+        }
+      }
+    });
+
+    return resultado;
+  }
+
+  private calcularGiro(
+    dirActual: Direction,
+    x: number,
+    y: number,
+    centerX: number,
+    centerY: number
+  ): Direction {
+    // Lógica de giro: priorizar mantenerse cerca del centro
+    const isArriba = y < centerY;
+    const isIzquierda = x < centerX;
+
+    switch (dirActual.name) {
+      case 'E': // Yendo derecha → girar abajo o arriba
+        return isArriba ? DIRECTIONS.S : DIRECTIONS.N;
+      case 'W': // Yendo izquierda → girar abajo o arriba
+        return isArriba ? DIRECTIONS.S : DIRECTIONS.N;
+      case 'N': // Yendo arriba → girar izquierda o derecha
+        return isIzquierda ? DIRECTIONS.E : DIRECTIONS.W;
+      case 'S': // Yendo abajo → girar izquierda o derecha
+        return isIzquierda ? DIRECTIONS.E : DIRECTIONS.W;
+      default:
+        return dirActual;
+    }
+  }
+
+  // ============================================
+  // PIPS (PUNTOS) DE LAS FICHAS
+  // ============================================
+  getPips(valor: number): { x: number; y: number }[] {
+    const d = 8; // Distancia desde centro
+    
+    // Posiciones relativas al centro de cada mitad de ficha
+    const positions: { [key: number]: { x: number; y: number }[] } = {
+      0: [],
+      1: [{ x: 0, y: 0 }],
+      2: [{ x: -d, y: -d }, { x: d, y: d }],
+      3: [{ x: -d, y: -d }, { x: 0, y: 0 }, { x: d, y: d }],
+      4: [{ x: -d, y: -d }, { x: d, y: -d }, { x: -d, y: d }, { x: d, y: d }],
+      5: [{ x: -d, y: -d }, { x: d, y: -d }, { x: 0, y: 0 }, { x: -d, y: d }, { x: d, y: d }],
+      6: [{ x: -d, y: -d }, { x: -d, y: 0 }, { x: -d, y: d }, { x: d, y: -d }, { x: d, y: 0 }, { x: d, y: d }],
+      7: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: 0, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+      8: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: -d, y: 0 }, { x: d, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+      9: [{ x: -d, y: -d }, { x: 0, y: -d }, { x: d, y: -d }, { x: -d, y: 0 }, { x: 0, y: 0 }, { x: d, y: 0 }, { x: -d, y: d }, { x: 0, y: d }, { x: d, y: d }],
+    };
+
+    return positions[valor] || [];
+  }
+
+  trackByFicha(index: number, ficha: FichaTablero): string {
+    return ficha.id;
+  }
+
+  // ============================================
+  // EVENTOS DEL JUEGO
+  // ============================================
   onFichaSeleccionada(event: { ficha: Ficha; lado: 'izquierda' | 'derecha' }) {
     const game = this.gameService();
 
@@ -423,10 +860,7 @@ export class TableroComponent implements OnInit {
       game.jugarFicha(event.ficha, event.lado);
       this.toast.showCubano();
     } else {
-      // Modo demo
       this.demoService.jugarFicha(event.ficha as any, event.lado);
-
-      // Agregar al historial
       this.ultimaJugada.set({
         id: `jugada-${Date.now()}`,
         jugador: '🎬 STREAMER',
@@ -444,10 +878,7 @@ export class TableroComponent implements OnInit {
     if (game) {
       game.pasarTurno();
     } else {
-      // Modo demo
       this.demoService.pasarTurno();
-
-      // Agregar al historial
       this.ultimaJugada.set({
         id: `paso-${Date.now()}`,
         jugador: '🎬 STREAMER',
@@ -456,47 +887,7 @@ export class TableroComponent implements OnInit {
         tipo: 'paso',
       });
     }
-
     this.toast.showCubano();
-  }
-
-  private calculateFichaX(orden: number): number {
-    const cellSize = 60;
-    const containerWidth = 800;
-    const startX = 100;
-
-    let x = orden * cellSize;
-    if (x > containerWidth) {
-      x = x % containerWidth || containerWidth;
-    }
-    return startX + x;
-  }
-
-  private calculateFichaY(orden: number): number {
-    const cellSize = 60;
-    const containerWidth = 800;
-    const startY = 100;
-
-    let totalX = orden * cellSize;
-    const rows = Math.floor(totalX / containerWidth);
-    return startY + rows * cellSize;
-  }
-
-  private calculateRotacion(ficha: FichaEnMesa): number {
-    // Mulas (dobles) se rotan 90 grados
-    if (ficha.valor_a === ficha.valor_b) {
-      return 90;
-    }
-    // Fichas normales están horizontales
-    return 0;
-  }
-
-  generarGrid(): number[] {
-    return Array.from({ length: 15 }, (_, i) => i);
-  }
-
-  generarEspacios(cantidad: number): number[] {
-    return Array.from({ length: cantidad }, (_, i) => i);
   }
 
   toggleGrid() {
@@ -532,8 +923,7 @@ export class TableroComponent implements OnInit {
     }
   }
 
-  private playAmbientSound() {
-    // Sonido ambiental del tablero (opcional)
-    // Esto podría ser un sonido suave de fondo
+  generarEspacios(cantidad: number): number[] {
+    return Array.from({ length: cantidad }, (_, i) => i);
   }
 }
