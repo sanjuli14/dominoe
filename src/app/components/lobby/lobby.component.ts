@@ -13,7 +13,7 @@ import { ToastService } from '../../services/toast.service';
   template: `
     <!-- App Container -->
     <div
-      class="w-full min-h-screen bg-twitch-black flex flex-col overflow-y-auto"
+      class="w-full min-h-[100dvh] bg-twitch-black flex flex-col overflow-y-auto"
     >
       <!-- Header Twitch Style -->
       <header class="nav-header shrink-0">
@@ -26,8 +26,10 @@ import { ToastService } from '../../services/toast.service';
       </header>
 
       <!-- Main Content -->
-      <main class="flex-1 flex items-center justify-center p-6 py-12">
-        <div class="w-full max-w-lg animate-fade-in my-auto">
+      <main class="flex-1 flex flex-col pt-8 pb-12 px-6">
+        <div
+          class="w-full max-w-lg mx-auto mt-[10vh] sm:mt-[15vh] animate-fade-in mb-auto"
+        >
           <!-- Brand Logo -->
           <div class="flex flex-col items-center justify-center mb-8">
             <img
