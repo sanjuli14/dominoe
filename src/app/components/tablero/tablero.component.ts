@@ -53,7 +53,7 @@ const DIRECTIONS = {
 };
 
 const GRID_CONFIG = {
-  CELL_SIZE: 40,        // Tamaño de celda en px
+  CELL_SIZE: 32,        // Tamaño de celda en px (32*2=64px = ancho exacto de ficha)
   FICHA_WIDTH_CELLS: 2,  // Ficha normal: 2 celdas de largo
   FICHA_HEIGHT_CELLS: 1, // Ficha normal: 1 celda de ancho
   MULA_SIZE_CELLS: 1,    // Mula: ocupa 1x1 pero se renderiza perpendicular
@@ -671,29 +671,31 @@ export class TableroComponent implements OnInit {
           ...ficha,
           cx: centerX,
           cy: centerY,
-          rotacion: esMula ? 90 : 0,
+          rotacion: esMula ? 90 : 0, // Mula vertical, normal horizontal
         };
         resultado.push(fichaCentro);
 
         // Configurar extremos después de la primera ficha
         if (esMula) {
-          // Mula en centro: ambos extremos apuntan hacia afuera perpendicularmente
+          // Mula en centro: vertical ocupa 32px, siguiente ficha horizontal 64px
+          // Para que queden pegadas: centro de siguiente ficha = 16px (mitad mula) + 32px (mitad ficha) = 48px
+          const offset = CELL_SIZE * 1.5; // 48px
           extremoIzq = {
-            gridX: centerX - CELL_SIZE,
+            gridX: centerX - offset,
             gridY: centerY,
             direccion: DIRECTIONS.W,
             valorLibre: ficha.valor_a,
             isActivo: true,
           };
           extremoDer = {
-            gridX: centerX + CELL_SIZE,
+            gridX: centerX + offset,
             gridY: centerY,
             direccion: DIRECTIONS.E,
             valorLibre: ficha.valor_b,
             isActivo: true,
           };
         } else {
-          // Ficha normal en centro
+          // Ficha normal en centro: horizontal, extremos a 2 celdas (64px)
           extremoIzq = {
             gridX: centerX - CELL_SIZE * 2,
             gridY: centerY,
