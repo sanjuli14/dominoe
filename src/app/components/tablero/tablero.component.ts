@@ -626,203 +626,214 @@ export class TableroComponent implements OnInit {
   }
 
   // ============================================
-  // ALGORITMO SNAKE - PATHFINDING & FLOW
+  // ALGORITMO SNAKE - GRID ESTRICTO
   // ============================================
+  // Usamos coordenadas de grid (enteros) para alineación perfecta
+  // Celda = 32px. Ficha normal = 2 celdas (64px). Mula = 1 celda ancho (32px).
+  
   private calcularPosicionesSnake(fichas: FichaTablero[]): FichaTablero[] {
     if (fichas.length === 0) return [];
 
-    const { CELL_SIZE, VIEWBOX_WIDTH, VIEWBOX_HEIGHT, MARGIN_X, MARGIN_Y } = GRID_CONFIG;
+    const { CELL_SIZE, VIEWBOX_WIDTH, VIEWBOX_HEIGHT } = GRID_CONFIG;
     
-    // Centro del tablero en coordenadas de grid
-    const centerX = VIEWBOX_WIDTH / 2;
-    const centerY = VIEWBOX_HEIGHT / 2;
+    // Centro en coordenadas de grid (cada celda = 32px)
+    const gridCenterX = Math.floor((VIEWBOX_WIDTH / 2) / CELL_SIZE);
+    const gridCenterY = Math.floor((VIEWBOX_HEIGHT / 2) / CELL_SIZE);
 
-    // Límites del tablero
-    const minX = MARGIN_X;
-    const maxX = VIEWBOX_WIDTH - MARGIN_X;
-    const minY = MARGIN_Y;
-    const maxY = VIEWBOX_HEIGHT - MARGIN_Y;
+    // Límites del grid (en celdas, dejando margen)
+    const MIN_COL = 3;  // 3 celdas de margen izquierdo
+    const MAX_COL = Math.floor(VIEWBOX_WIDTH / CELL_SIZE) - 3;
+    const MIN_ROW = 3;  // 3 celdas de margen superior
+    const MAX_ROW = Math.floor(VIEWBOX_HEIGHT / CELL_SIZE) - 3;
 
     const resultado: FichaTablero[] = [];
 
-    // Dos extremos: izquierda (A) y derecha (B) de la cadena
-    let extremoIzq: Extremo = {
-      gridX: centerX,
-      gridY: centerY,
-      direccion: DIRECTIONS.W,
+    // Interface para seguimiento de extremos en coordenadas de grid
+    interface GridExtremo {
+      col: number;
+      row: number;
+      dir: Direction;
+      valorLibre: number | null;
+      isActivo: boolean;
+    }
+
+    let extremoIzq: GridExtremo = {
+      col: gridCenterX,
+      row: gridCenterY,
+      dir: DIRECTIONS.W,
       valorLibre: null,
       isActivo: false,
     };
 
-    let extremoDer: Extremo = {
-      gridX: centerX,
-      gridY: centerY,
-      direccion: DIRECTIONS.E,
+    let extremoDer: GridExtremo = {
+      col: gridCenterX,
+      row: gridCenterY,
+      dir: DIRECTIONS.E,
       valorLibre: null,
       isActivo: false,
+    };
+
+    // Sistema de giro determinístico simple
+    // Cada extremo gira en una secuencia fija cuando llega a un borde
+    const girarIzquierda = (dir: Direction): Direction => {
+      // Secuencia: W -> N -> E -> S -> W (sentido horario desde perspectiva del centro)
+      switch (dir.name) {
+        case 'W': return DIRECTIONS.N;
+        case 'N': return DIRECTIONS.E;
+        case 'E': return DIRECTIONS.S;
+        case 'S': return DIRECTIONS.W;
+        default: return dir;
+      }
+    };
+    
+    const girarDerecha = (dir: Direction): Direction => {
+      // Secuencia: E -> S -> W -> N -> E (sentido anti-horario desde perspectiva del centro)
+      switch (dir.name) {
+        case 'E': return DIRECTIONS.S;
+        case 'S': return DIRECTIONS.W;
+        case 'W': return DIRECTIONS.N;
+        case 'N': return DIRECTIONS.E;
+        default: return dir;
+      }
+    };
+
+    // Función para verificar si necesitamos girar (llegamos al borde)
+    const necesitaGirar = (extremo: GridExtremo, esMula: boolean): boolean => {
+      const avanceCeldas = esMula ? 1 : 2;
+      const testCol = extremo.col + extremo.dir.x * avanceCeldas;
+      const testRow = extremo.row + extremo.dir.y * avanceCeldas;
+      
+      return testCol < MIN_COL || testCol > MAX_COL || testRow < MIN_ROW || testRow > MAX_ROW;
     };
 
     fichas.forEach((ficha, index) => {
       const esMula = ficha.esMula;
 
       if (index === 0) {
-        // Primera ficha: en el centro
+        // Primera ficha: en el centro del grid
         const fichaCentro = {
           ...ficha,
-          cx: centerX,
-          cy: centerY,
-          rotacion: esMula ? 90 : 0, // Mula vertical, normal horizontal
+          cx: gridCenterX * CELL_SIZE,
+          cy: gridCenterY * CELL_SIZE,
+          rotacion: esMula ? 90 : 0,
         };
         resultado.push(fichaCentro);
 
-        // Configurar extremos después de la primera ficha
+        // Configurar extremos según el tipo de ficha inicial
         if (esMula) {
-          // Mula en centro: vertical ocupa 32px, siguiente ficha horizontal 64px
-          // Para que queden pegadas: centro de siguiente ficha = 16px (mitad mula) + 32px (mitad ficha) = 48px
-          const offset = CELL_SIZE * 1.5; // 48px
+          // Mula vertical: extremos a 1.5 celdas (48px) para que las horizontales queden pegadas
           extremoIzq = {
-            gridX: centerX - offset,
-            gridY: centerY,
-            direccion: DIRECTIONS.W,
+            col: gridCenterX - 1,
+            row: gridCenterY,
+            dir: DIRECTIONS.W,
             valorLibre: ficha.valor_a,
             isActivo: true,
           };
           extremoDer = {
-            gridX: centerX + offset,
-            gridY: centerY,
-            direccion: DIRECTIONS.E,
+            col: gridCenterX + 1,
+            row: gridCenterY,
+            dir: DIRECTIONS.E,
             valorLibre: ficha.valor_b,
             isActivo: true,
           };
         } else {
-          // Ficha normal en centro: horizontal, extremos a 2 celdas (64px)
+          // Ficha normal horizontal: extremos a 2 celdas (64px)
           extremoIzq = {
-            gridX: centerX - CELL_SIZE * 2,
-            gridY: centerY,
-            direccion: DIRECTIONS.W,
+            col: gridCenterX - 2,
+            row: gridCenterY,
+            dir: DIRECTIONS.W,
             valorLibre: ficha.valor_a,
             isActivo: true,
           };
           extremoDer = {
-            gridX: centerX + CELL_SIZE * 2,
-            gridY: centerY,
-            direccion: DIRECTIONS.E,
+            col: gridCenterX + 2,
+            row: gridCenterY,
+            dir: DIRECTIONS.E,
             valorLibre: ficha.valor_b,
             isActivo: true,
           };
         }
       } else {
-        // Fichas subsiguientes: se colocan en los extremos
+        // Fichas subsiguientes
         const esExtremoIzq = ficha.lado === 'izquierda';
-        const extremo = esExtremoIzq ? extremoIzq : extremoDer;
+        let extremo = esExtremoIzq ? extremoIzq : extremoDer;
 
-        if (!extremo.isActivo) {
-          console.warn('Extremo no activo, ignorando ficha', ficha);
-          return;
-        }
+        if (!extremo.isActivo) return;
 
-        // Verificar si necesitamos girar (colisión con bordes)
-        const pasoX = extremo.direccion.x * CELL_SIZE * 2;
-        const pasoY = extremo.direccion.y * CELL_SIZE * 2;
-        const testX = extremo.gridX + pasoX;
-        const testY = extremo.gridY + pasoY;
-
-        let direccionActual = extremo.direccion;
-
-        // Detectar colisión con bordes y girar
-        if (testX < minX || testX > maxX || testY < minY || testY > maxY) {
-          direccionActual = this.calcularGiro(direccionActual, extremo.gridX, extremo.gridY, centerX, centerY);
+        // Verificar si necesitamos girar
+        if (necesitaGirar(extremo, esMula)) {
+          // Girar según el extremo (izquierdo gira en sentido horario, derecho anti-horario)
+          const nuevaDir = esExtremoIzq ? girarIzquierda(extremo.dir) : girarDerecha(extremo.dir);
+          const dirAnterior = extremo.dir;
+          extremo.dir = nuevaDir;
           
-          // Ajustar posición para el giro
-          extremo.gridX += direccionActual.x * CELL_SIZE;
-          extremo.gridY += direccionActual.y * CELL_SIZE;
+          // Para que la ficha quede pegada al girar, debemos ajustar la posición del extremo
+          // El centro de la nueva ficha debe estar alineado con el borde de la última ficha colocada
+          // Una ficha normal mide 64px (2 celdas), una mula 32px (1 celda)
+          
+          // Ajuste fino para el giro: retroceder 1 celda en la dirección anterior
+          // para que la nueva ficha quede pegada a la anterior
+          if (dirAnterior.name === 'E') {
+            // Íbamos a la derecha, ahora giramos (N o S)
+            // Retroceder a la columna anterior para que quede pegada
+            extremo.col = extremo.col - 1;
+            if (nuevaDir.name === 'S') extremo.row = Math.min(extremo.row + 2, MAX_ROW);
+            if (nuevaDir.name === 'N') extremo.row = Math.max(extremo.row - 2, MIN_ROW);
+          } else if (dirAnterior.name === 'W') {
+            // Íbamos a la izquierda, ahora giramos (N o S)
+            extremo.col = extremo.col + 1;
+            if (nuevaDir.name === 'S') extremo.row = Math.min(extremo.row + 2, MAX_ROW);
+            if (nuevaDir.name === 'N') extremo.row = Math.max(extremo.row - 2, MIN_ROW);
+          } else if (dirAnterior.name === 'N') {
+            // Íbamos arriba, ahora giramos (E o W)
+            extremo.row = extremo.row + 1;
+            if (nuevaDir.name === 'E') extremo.col = Math.min(extremo.col + 2, MAX_COL);
+            if (nuevaDir.name === 'W') extremo.col = Math.max(extremo.col - 2, MIN_COL);
+          } else if (dirAnterior.name === 'S') {
+            // Íbamos abajo, ahora giramos (E o W)
+            extremo.row = extremo.row - 1;
+            if (nuevaDir.name === 'E') extremo.col = Math.min(extremo.col + 2, MAX_COL);
+            if (nuevaDir.name === 'W') extremo.col = Math.max(extremo.col - 2, MIN_COL);
+          }
         }
 
-        // Calcular rotación de la ficha
+        // Calcular rotación
         let rotacion: number;
-        let offsetX = 0;
-        let offsetY = 0;
-
         if (esMula) {
-          // Las mulas se colocan PERPENDICULARES a la dirección de flujo
-          // Si vamos horizontal (E/W), la mula es vertical (90°)
-          // Si vamos vertical (N/S), la mula es horizontal (0°)
-          if (direccionActual.name === 'E' || direccionActual.name === 'W') {
-            rotacion = 90; // Vertical
-          } else {
-            rotacion = 0; // Horizontal
-          }
+          // Mulas perpendiculares a la dirección
+          rotacion = (extremo.dir.name === 'E' || extremo.dir.name === 'W') ? 90 : 0;
         } else {
-          // Fichas normales siguen la dirección de flujo
-          // Determinar si necesitamos invertir basado en qué lado embona
           const embonaA = ficha.valor_a === extremo.valorLibre;
-          
-          if (embonaA) {
-            // El valor A embona, así que va hacia el extremo
-            // Rotación normal según dirección
-            rotacion = direccionActual.angle;
-          } else {
-            // El valor B embona, invertimos la ficha
-            rotacion = (direccionActual.angle + 180) % 360;
-          }
+          rotacion = embonaA ? extremo.dir.angle : (extremo.dir.angle + 180) % 360;
         }
 
-        // Posicionar la ficha
+        // Posicionar ficha (convertir grid a píxeles)
         const fichaPosicionada = {
           ...ficha,
-          cx: extremo.gridX,
-          cy: extremo.gridY,
+          cx: extremo.col * CELL_SIZE,
+          cy: extremo.row * CELL_SIZE,
           rotacion,
         };
         resultado.push(fichaPosicionada);
 
-        // Actualizar el extremo para la siguiente ficha
+        // Actualizar extremo para siguiente ficha
         const nuevoValorLibre = ficha.valor_a === extremo.valorLibre ? ficha.valor_b : ficha.valor_a;
+        const avanceCeldas = esMula ? 1 : 2;
         
-        // Avanzar el cursor del extremo
-        const avance = esMula ? CELL_SIZE : CELL_SIZE * 2;
-        const nuevoExtremo: Extremo = {
-          gridX: extremo.gridX + direccionActual.x * avance,
-          gridY: extremo.gridY + direccionActual.y * avance,
-          direccion: direccionActual,
+        const nuevoExtremo: GridExtremo = {
+          col: extremo.col + extremo.dir.x * avanceCeldas,
+          row: extremo.row + extremo.dir.y * avanceCeldas,
+          dir: extremo.dir,
           valorLibre: nuevoValorLibre,
           isActivo: true,
         };
 
-        if (esExtremoIzq) {
-          extremoIzq = nuevoExtremo;
-        } else {
-          extremoDer = nuevoExtremo;
-        }
+        if (esExtremoIzq) extremoIzq = nuevoExtremo;
+        else extremoDer = nuevoExtremo;
       }
     });
 
     return resultado;
-  }
-
-  private calcularGiro(
-    dirActual: Direction,
-    x: number,
-    y: number,
-    centerX: number,
-    centerY: number
-  ): Direction {
-    // Lógica de giro: priorizar mantenerse cerca del centro
-    const isArriba = y < centerY;
-    const isIzquierda = x < centerX;
-
-    switch (dirActual.name) {
-      case 'E': // Yendo derecha → girar abajo o arriba
-        return isArriba ? DIRECTIONS.S : DIRECTIONS.N;
-      case 'W': // Yendo izquierda → girar abajo o arriba
-        return isArriba ? DIRECTIONS.S : DIRECTIONS.N;
-      case 'N': // Yendo arriba → girar izquierda o derecha
-        return isIzquierda ? DIRECTIONS.E : DIRECTIONS.W;
-      case 'S': // Yendo abajo → girar izquierda o derecha
-        return isIzquierda ? DIRECTIONS.E : DIRECTIONS.W;
-      default:
-        return dirActual;
-    }
   }
 
   // ============================================
