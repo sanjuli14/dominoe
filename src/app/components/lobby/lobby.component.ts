@@ -362,8 +362,13 @@ export class LobbyComponent {
 
   // Unirse a una sala existente
   async unirseASala() {
+    console.log('[Lobby] unirseASala INICIO');
+    console.log('[Lobby] codigoSala:', this.codigoSala);
+    console.log('[Lobby] nombreJugador:', this.nombreJugador);
+
     // Validar código
     if (!this.util.esCodigoValido(this.codigoSala)) {
+      console.error('[Lobby] Código inválido');
       this.toast.showToast(
         'Código inválido. Debe ser 6 caracteres.',
         'error',
@@ -371,9 +376,11 @@ export class LobbyComponent {
       );
       return;
     }
+    console.log('[Lobby] Código válido');
 
     // Validar nombre
     if (!this.util.esNombreValido(this.nombreJugador)) {
+      console.error('[Lobby] Nombre inválido');
       this.toast.showToast(
         'Nombre inválido (2-30 caracteres, solo letras/números)',
         'error',
@@ -381,13 +388,16 @@ export class LobbyComponent {
       );
       return;
     }
+    console.log('[Lobby] Nombre válido');
 
     this.cargando.set(true);
+    console.log('[Lobby] Llamando a gameService.unirseASala...');
     try {
       const partidaId = await this.gameService.unirseASala(
         this.codigoSala,
         this.nombreJugador,
       );
+      console.log('[Lobby] gameService.unirseASala completado:', partidaId);
 
       if (partidaId) {
         this.toast.showToast('✅ ¡Te uniste a la sala!', 'success', 2000);
