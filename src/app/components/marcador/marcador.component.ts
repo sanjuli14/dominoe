@@ -14,11 +14,11 @@ import { Jugador } from '../../services/game.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- Score Panel -->
-    <div class="fixed top-20 right-4 z-40 w-64 animate-fade-in">
-      <div class="glass-panel p-4">
+    <div class="fixed top-20 right-4 z-40 w-64 animate-fade-in ">
+      <div class="glass-panel-marcador p-4">
         <!-- Header -->
         <div
-          class="flex justify-between items-center mb-4 pb-3 border-b border-twitch-gray"
+          class="flex justify-between items-center mb-4 pb-3 border-b border-twitch-gray/50"
         >
           <span class="text-sm font-semibold text-twitch-text"
             >Mano {{ manoActual }}</span
@@ -35,8 +35,8 @@ import { Jugador } from '../../services/game.service';
             class="p-3 rounded-lg border transition-all"
             [ngClass]="
               miEquipo === 0
-                ? 'bg-twitch-purple/10 border-twitch-purple'
-                : 'bg-twitch-darker border-twitch-gray'
+                ? 'bg-twitch-purple/15 border-twitch-purple'
+                : 'bg-twitch-darker/35 border-twitch-gray/60'
             "
           >
             <div class="flex justify-between items-center">
@@ -51,7 +51,9 @@ import { Jugador } from '../../services/game.service';
                 >{{ puntuacion.eq0 }}</span
               >
             </div>
-            <div class="mt-2 h-1 bg-twitch-gray rounded-full overflow-hidden">
+            <div
+              class="mt-2 h-1 bg-twitch-gray/50 rounded-full overflow-hidden"
+            >
               <div
                 class="h-full bg-twitch-purple transition-all duration-500"
                 [style.width.%]="(puntuacion.eq0 / 200) * 100"
@@ -64,8 +66,8 @@ import { Jugador } from '../../services/game.service';
             class="p-3 rounded-lg border transition-all"
             [ngClass]="
               miEquipo === 1
-                ? 'bg-accent-info/10 border-accent-info'
-                : 'bg-twitch-darker border-twitch-gray'
+                ? 'bg-accent-info/15 border-accent-info'
+                : 'bg-twitch-darker/35 border-twitch-gray/60'
             "
           >
             <div class="flex justify-between items-center">
@@ -80,7 +82,9 @@ import { Jugador } from '../../services/game.service';
                 >{{ puntuacion.eq1 }}</span
               >
             </div>
-            <div class="mt-2 h-1 bg-twitch-gray rounded-full overflow-hidden">
+            <div
+              class="mt-2 h-1 bg-twitch-gray/50 rounded-full overflow-hidden"
+            >
               <div
                 class="h-full bg-accent-info transition-all duration-500"
                 [style.width.%]="(puntuacion.eq1 / 200) * 100"
@@ -90,7 +94,9 @@ import { Jugador } from '../../services/game.service';
         </div>
 
         <!-- Current turn -->
-        <div class="p-3 bg-twitch-darker rounded-lg border border-twitch-gray">
+        <div
+          class="p-3 bg-twitch-darker/35 rounded-lg border border-twitch-gray/60"
+        >
           <p class="text-xs text-twitch-text-muted uppercase mb-1">Turno de</p>
           <p class="font-semibold text-twitch-text">
             {{ turnoJugadorNombre() }}
@@ -100,7 +106,7 @@ import { Jugador } from '../../services/game.service';
         <!-- Players list -->
         <div
           *ngIf="jugadores.length > 0"
-          class="mt-4 pt-4 border-t border-twitch-gray space-y-1"
+          class="mt-4 pt-4 border-t border-twitch-gray/50 space-y-1"
         >
           <p class="text-xs text-twitch-text-muted uppercase mb-2">Jugadores</p>
           <div

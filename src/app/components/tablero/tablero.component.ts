@@ -112,7 +112,6 @@ interface FichaTablero {
           <span class="brand-gradient text-lg">LA ESQUINA</span>
         </div>
         <div class="flex items-center gap-4 text-sm">
-          <div *ngIf="isDemoMode()" class="badge badge-purple">DEMO</div>
           <div *ngIf="!isDemoMode()" class="flex items-center gap-2">
             <span class="status-dot online"></span>
             <span class="text-twitch-text-muted">Sala: {{ codigoSala() }}</span>
