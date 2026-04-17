@@ -159,7 +159,7 @@ export class UtilService {
 
   // Validar código de sala
   esCodigoValido(codigo: string): boolean {
-    return codigo.length === 6 && /^[A-Z0-9]+$/.test(codigo);
+    return codigo.length === 6 && /^[A-Za-z0-9]+$/.test(codigo);
   }
 
   // Generar código de sala (6 caracteres)
