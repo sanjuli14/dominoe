@@ -27,16 +27,15 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // JWT validation disabled for MVP
-    // const authHeader = req.headers.get('authorization');
-    // if (!authHeader) throw new Error('No autorizado');
+    // JWT validation - PRODUCTION READY
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) throw new Error('No autorizado - Falta header Authorization');
 
-    // const token = authHeader.replace('Bearer ', '');
-    // const {
-    //   data: { user },
-    //   error: authError,
-    // } = await supabaseAdmin.auth.getUser(token);
-    // if (authError || !user) throw new Error('Token inválido');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) throw new Error('Token inválido - ' + (authError?.message || 'Usuario no encontrado'));
+
+    console.log('[solicitar-companero] JWT validado, userId:', user.id);
 
     const { partidaId } = await req.json();
     if (!partidaId) throw new Error('Se requiere partidaId');

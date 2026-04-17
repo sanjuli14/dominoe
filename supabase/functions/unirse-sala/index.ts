@@ -19,12 +19,26 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    console.log('[unirse-sala] JWT validation skipped for MVP');
+    // JWT validation - PRODUCTION READY
+    const authHeader = req.headers.get('authorization');
+    console.log('[unirse-sala] Auth header:', authHeader ? 'Presente' : 'Ausente');
 
-    const { codigoSala, nombre, userId } = await req.json();
+    if (!authHeader) {
+      throw new Error('No autorizado - Falta header Authorization');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('Token inválido - ' + (authError?.message || 'Usuario no encontrado'));
+    }
+
+    console.log('[unirse-sala] JWT validado, userId:', user.id);
+
+    const { codigoSala, nombre } = await req.json();
     
-    // Use provided userId or generate one for MVP
-    const playerUserId = userId || `temp_${nombre ? nombre.replace(/\s+/g, '_').toLowerCase() : Math.random().toString(36).substring(7)}`;                          
+    // El userId viene SIEMPRE del JWT, nunca del body
+    const playerUserId = user.id;                          
     if (!codigoSala) throw new Error('Código de sala requerido');
 
     // Find the room

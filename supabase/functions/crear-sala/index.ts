@@ -18,30 +18,29 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // JWT validation disabled for MVP
-    // const authHeader = req.headers.get('authorization');
-    // console.log('[crear-sala] Auth header:', authHeader ? 'Presente' : 'Ausente');
+    // JWT validation - PRODUCTION READY
+    const authHeader = req.headers.get('authorization');
+    console.log('[crear-sala] Auth header:', authHeader ? 'Presente' : 'Ausente');
 
-    // if (!authHeader) {
-    //   throw new Error('No autorizado');
-    // }
+    if (!authHeader) {
+      throw new Error('No autorizado - Falta header Authorization');
+    }
 
-    // const token = authHeader.replace('Bearer ', '');
-    // const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    // if (authError || !user) {
-    //   throw new Error('Token inválido');
-    // }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('Token inválido - ' + (authError?.message || 'Usuario no encontrado'));
+    }
 
-    console.log('[crear-sala] JWT validation skipped for MVP');
+    console.log('[crear-sala] JWT validado, userId:', user.id);
 
     const bodyText = await req.text();
-    const { nombre, conBots, userId } = bodyText
+    const { nombre, conBots } = bodyText
       ? JSON.parse(bodyText)
       : { nombre: 'Anfitrión', conBots: false };
 
-    // Use provided userId or generate one for MVP
-    const creatorUserId =
-      userId || `temp_${Math.random().toString(36).substring(7)}`;
+    // El userId viene SIEMPRE del JWT, nunca del body
+    const creatorUserId = user.id;
 
     // 1. Create partida (room)
     const { data: partida, error: pError } = await supabaseAdmin

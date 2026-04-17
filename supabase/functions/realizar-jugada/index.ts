@@ -49,13 +49,10 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // JWT validation disabled for MVP
-
-    console.log('[realizar-jugada] JWT validation skipped for MVP');
-
     const bodyText = await req.text();
     const parsedBody = bodyText ? JSON.parse(bodyText) : ({} as any);
 
+    // Server trigger para bots (viene del backend, no necesita JWT)
     if (parsedBody.isServerTrigger) {
       console.log('Server trigger received for Partida:', parsedBody.partidaId);
       await processBots(supabaseAdmin, parsedBody.partidaId);
@@ -68,14 +65,30 @@ serve(async (req: Request) => {
       );
     }
 
-    const { partidaId, fichaId, lado, userId } = parsedBody;
+    // JWT validation para jugadores humanos
+    const authHeader = req.headers.get('authorization');
+    console.log('[realizar-jugada] Auth header:', authHeader ? 'Presente' : 'Ausente');
 
-    if (!userId) {
-      throw new Error('falta userId en el request de realizar jugada');
+    if (!authHeader) {
+      throw new Error('No autorizado - Falta header Authorization');
     }
 
-    // Use provided userId
-    const requestingUserId = userId;
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('Token inválido - ' + (authError?.message || 'Usuario no encontrado'));
+    }
+
+    console.log('[realizar-jugada] JWT validado, userId:', user.id);
+
+    const { partidaId, fichaId, lado } = parsedBody;
+
+    if (!partidaId || !fichaId || !lado) {
+      throw new Error('Faltan datos requeridos: partidaId, fichaId, lado');
+    }
+
+    // El userId viene SIEMPRE del JWT, nunca del body
+    const requestingUserId = user.id;
 
     const res = await processJugada(
       supabaseAdmin,

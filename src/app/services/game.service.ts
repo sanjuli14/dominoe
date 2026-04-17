@@ -207,6 +207,11 @@ export class GameService {
   }
 
   async setCurrentGame(gameId: string) {
+    // Limpiar canales de partida anterior si existe
+    if (this.partida_id()) {
+      this.cleanupChannels();
+    }
+
     this.partida_id.set(gameId);
 
     const { data } = await this.supabase.auth.getSession();
@@ -338,6 +343,9 @@ export class GameService {
     const id = this.partida_id();
     if (!id) return;
 
+    // Limpiar canales existentes antes de crear nuevos
+    this.cleanupChannels();
+
     // Evitar suscribirse múltiples veces al mismo canal
     const topic = `realtime:game:${id}`;
     if (this.supabase.getChannels().find((c) => c.topic === topic)) {
@@ -348,15 +356,6 @@ export class GameService {
       const mi = this.miJugador();
       if (mi) this.subscribeMisFichas(mi.id);
       return;
-    }
-
-    // Si hubiese otros canales de OTRAS partidas, podríamos limpiarlos individualmente.
-    // Para simplificar, limpiaremos canales viejos que no sean este.
-    const canalesViejos = this.supabase
-      .getChannels()
-      .filter((c) => c.topic !== topic && !c.topic.includes('fichas_manos:'));
-    for (const c of canalesViejos) {
-      await this.supabase.removeChannel(c);
     }
 
     const mi = this.miJugador();
@@ -532,45 +531,42 @@ export class GameService {
 
   async crearSala(nombreJugador: string): Promise<string | null> {
     try {
-      // Esperar a que la autenticación esté lista
-      await this.waitForAuth();
+      // Asegurar autenticación anónima
+      await this.ensureAnonymousAuth();
 
       // Obtener token de sesión
       const { data: sessionData } = await this.supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
-        console.error(
-          '[crearSala] No hay token de sesión después de esperar autenticación',
-        );
-        throw new Error('No hay sesión activa');
+        console.error('[crearSala] No hay token de sesión');
+        this.errorMessage$.next('Error: No hay sesión activa');
+        return null;
       }
 
-      console.log('[crearSala] Token obtenido, llamando Edge Function...');
-
-      const actualUserId =
-        this.user_id() ||
-        localStorage.getItem('guest_user_id') ||
-        `temp_${Math.random().toString(36).substring(7)}`;
-
-      if (!this.user_id()) {
-        localStorage.setItem('guest_user_id', actualUserId);
-        this.user_id.set(actualUserId); // Lo forzamos en el signal para que "loadMisFichas" lo pille.
+      // El userId AHORA viene SOLO de Supabase Auth - nunca de localStorage ni temp_
+      const actualUserId = this.user_id();
+      if (!actualUserId) {
+        console.error('[crearSala] No hay user_id de Supabase');
+        this.errorMessage$.next('Error de autenticación');
+        return null;
       }
 
-      // Usar fetch directo para mayor control
+      console.log('[crearSala] Creando sala con userId:', actualUserId);
+
+      // Usar fetch con JWT Authorization header
       const resp = await fetch(
         `${environment.supabaseUrl}/functions/v1/crear-sala`,
         {
           method: 'POST',
           headers: {
-            // Authorization: `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             nombre: nombreJugador,
             conBots: false,
-            userId: actualUserId,
+            // NO enviamos userId - el Edge Function lo saca del JWT
           }),
         },
       );
@@ -606,45 +602,42 @@ export class GameService {
     nombreJugador: string,
   ): Promise<string | null> {
     try {
-      // Esperar a que la autenticación esté lista
-      await this.waitForAuth();
+      // Asegurar autenticación anónima
+      await this.ensureAnonymousAuth();
 
       // Obtener token de sesión
       const { data: sessionData } = await this.supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
-        console.error(
-          '[unirseASala] No hay token de sesión después de esperar autenticación',
-        );
-        throw new Error('No hay sesión activa');
+        console.error('[unirseASala] No hay token de sesión');
+        this.errorMessage$.next('Error: No hay sesión activa');
+        return null;
       }
 
-      console.log('[unirseASala] Token obtenido, llamando Edge Function...');
-
-      const actualUserId =
-        this.user_id() ||
-        localStorage.getItem('guest_user_id') ||
-        `temp_${Math.random().toString(36).substring(7)}`;
-
-      if (!this.user_id()) {
-        localStorage.setItem('guest_user_id', actualUserId);
-        this.user_id.set(actualUserId); // Lo forzamos en el signal para que "loadMisFichas" lo pille.
+      // El userId AHORA viene SOLO de Supabase Auth
+      const actualUserId = this.user_id();
+      if (!actualUserId) {
+        console.error('[unirseASala] No hay user_id de Supabase');
+        this.errorMessage$.next('Error de autenticación');
+        return null;
       }
 
-      // Usar fetch directo para mayor control
+      console.log('[unirseASala] Uniendo con userId:', actualUserId);
+
+      // Usar fetch con JWT Authorization header
       const resp = await fetch(
         `${environment.supabaseUrl}/functions/v1/unirse-sala`,
         {
           method: 'POST',
           headers: {
-            // Authorization: `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             codigoSala: codigo.toUpperCase(),
             nombre: nombreJugador,
-            userId: actualUserId,
+            // NO enviamos userId - el Edge Function lo saca del JWT
           }),
         },
       );
@@ -786,24 +779,30 @@ export class GameService {
         throw new Error('No hay sesión activa');
       }
 
+      // Verificar que tenemos un user_id válido de Supabase
+      const actualUserId = this.user_id();
+      if (!actualUserId) {
+        console.error('[jugarFicha] No hay user_id de Supabase');
+        this.errorMessage$.next('Error de autenticación');
+        return false;
+      }
+
       console.log('[jugarFicha] Token obtenido, llamando Edge Function...');
 
-      // Usar fetch directo para mayor control
+      // Usar fetch con JWT Authorization header
       const resp = await fetch(
         `${environment.supabaseUrl}/functions/v1/realizar-jugada`,
         {
           method: 'POST',
           headers: {
-            // Authorization: `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             partidaId: id,
             fichaId: ficha.id,
             lado: lado,
-            userId:
-              this.user_id() ||
-              `temp_${Math.random().toString(36).substring(7)}`,
+            // NO enviamos userId - el Edge Function lo saca del JWT
           }),
         },
       );
@@ -921,5 +920,39 @@ export class GameService {
       // Mostrarse a sí mismo también
       this.tallaMessage$.next(`Dice ${j.nombre}: ${mensaje}`);
     }
+  }
+
+  // ============================================
+  // SALIR DE LA PARTIDA (LIMPIEZA COMPLETA)
+  // ============================================
+  salirPartida() {
+    console.log('[salirPartida] Limpiando estado y canales...');
+
+    // Limpiar todos los canales
+    this.cleanupChannels();
+
+    // Resetear estado
+    this.partida_id.set(null);
+    this.jugadores.set([]);
+    this.manoActual.set(null);
+    this.fichasEnMano.set([]);
+    this.fichasEnMesa.set([]);
+    this.turnoActual.set(0);
+    this.errorMessage$.next('');
+    this.toastMessage$.next('');
+
+    console.log('[salirPartida] Estado limpiado');
+  }
+
+  // ============================================
+  // LIMPIEZA DE CANALES
+  // ============================================
+  private cleanupChannels() {
+    console.log('[cleanupChannels] Limpiando canales anteriores...');
+    const channels = this.supabase.getChannels();
+    channels.forEach((channel) => {
+      console.log('[cleanupChannels] Removiendo canal:', channel.topic);
+      this.supabase.removeChannel(channel);
+    });
   }
 }
