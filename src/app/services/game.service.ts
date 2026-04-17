@@ -601,13 +601,20 @@ export class GameService {
     codigo: string,
     nombreJugador: string,
   ): Promise<string | null> {
+    console.log('[unirseASala] ===== INICIO =====');
+    console.log('[unirseASala] Codigo:', codigo, 'Nombre:', nombreJugador);
+
     try {
+      console.log('[unirseASala] Paso 1: ensureAnonymousAuth...');
       // Asegurar autenticación anónima
       await this.ensureAnonymousAuth();
+      console.log('[unirseASala] Paso 1: DONE');
 
+      console.log('[unirseASala] Paso 2: getSession...');
       // Obtener token de sesión
       const { data: sessionData } = await this.supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
+      console.log('[unirseASala] Paso 2: DONE, token:', accessToken ? 'PRESENTE' : 'AUSENTE');
 
       if (!accessToken) {
         console.error('[unirseASala] No hay token de sesión');
@@ -615,15 +622,18 @@ export class GameService {
         return null;
       }
 
+      console.log('[unirseASala] Paso 3: user_id...');
       // El userId AHORA viene SOLO de Supabase Auth
       const actualUserId = this.user_id();
+      console.log('[unirseASala] Paso 3: DONE, userId:', actualUserId);
+
       if (!actualUserId) {
         console.error('[unirseASala] No hay user_id de Supabase');
         this.errorMessage$.next('Error de autenticación');
         return null;
       }
 
-      console.log('[unirseASala] Uniendo con userId:', actualUserId);
+      console.log('[unirseASala] Paso 4: Preparando fetch con userId:', actualUserId);
 
       // Usar fetch con JWT Authorization header
       const resp = await fetch(
